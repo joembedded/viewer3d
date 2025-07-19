@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <!-- dieses kleine Tool laedt ein GLB Modell, umgibt es optional mit einer Box  -->
+<!-- V1.0 (C)JoEmbedded -->
 <html lang="en">
 
 <head>
@@ -125,7 +126,7 @@
                 if (loaderDiv) loaderDiv.style.display = 'none';
             },
             (xhr) => {
-                const proc = (xhr.loaded / xhr.total * 100).toFixed(1);
+                let proc = (xhr.loaded / xhr.total * 100).toFixed(1);
                 if (proc > 100) proc = 100;
                 console.log(`Geladen: ${proc}%`);
                 if (loaderDiv) loaderDiv.textContent = `Geladen: ${proc}%`;
