@@ -3,6 +3,8 @@
 Dies ist ein einfacher Viewer für 3D-Modelle im GLTF- oder GLB-Format.
 Er eignet sich z.B. für die Darstellung von Leiterplatten-Modellen, wie sie etwa KiCad erzeugen kann.
 
+[Live-Demo](https://joembedded.github.io/viewer3d/index.html)
+
 ## Features
 - Anzeige von GLTF/GLB-Modellen im Browser
 - Zentrierung und automatische Skalierung des Modells
