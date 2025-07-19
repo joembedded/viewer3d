@@ -7,9 +7,14 @@
     <title>3D-Viewer</title>
     <style>
         #viewer {
-            width: 600px;
-            height: 400px;
+            width: 90vw;
+            height: 80vh;
             border: 1px solid #ccc;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            box-sizing: border-box;
         }
 
         #loader {
@@ -52,6 +57,7 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+
         // 1. Grundszene aufsetzen
         const container = document.getElementById('viewer');
         const scene = new THREE.Scene();
@@ -66,7 +72,6 @@
 
         const camera = new THREE.PerspectiveCamera(30, container.clientWidth / container.clientHeight, 0.1, 1000);
         camera.position.set(0, 2, 1);
-
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio);
         //renderer.setSize(window.innerWidth, window.innerHeight); // variable size
@@ -75,8 +80,13 @@
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.toneMappingExposure = 1.2;
         renderer.toneMapping = THREE.LinearToneMapping;
-
         container.appendChild(renderer.domElement);
+        window.addEventListener('resize', () => {
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+        });
+
 
         // 3. GLTF/GLB laden
         let model;
@@ -116,6 +126,7 @@
             },
             (xhr) => {
                 const proc = (xhr.loaded / xhr.total * 100).toFixed(1);
+                if (proc > 100) proc = 100;
                 console.log(`Geladen: ${proc}%`);
                 if (loaderDiv) loaderDiv.textContent = `Geladen: ${proc}%`;
             },
