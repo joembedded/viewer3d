@@ -1,6 +1,6 @@
 # 3D-Viewer für GLTF/GLB-Modelle
 
-Dies ist ein einfacher Viewer für 3D-Modelle im GLTF- oder GLB-Format.
+Dies ist ein einfacher Viewer für 3D-Modelle im GLTF- oder GLB-Format.  
 Er eignet sich z.B. für die Darstellung von Leiterplatten-Modellen, wie sie etwa KiCad erzeugen kann.
 
 [Live-Demo](https://joembedded.github.io/viewer3d/index.html)
@@ -11,9 +11,11 @@ Er eignet sich z.B. für die Darstellung von Leiterplatten-Modellen, wie sie etw
 - Ladeanzeige während des Modell-Ladevorgangs
 
 ## Benutzung
-1. Lege das 3D-Modell (z.B. `rak3172sip.glb`) ins Verzeichnis (siehe `loader.load('rak3172sip.glb', ...)`)
-2. Öffne die `index.html` im Browser (am besten über einen lokalen Webserver, z.B. mit [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) für VS Code).
-3. Das Modell wird automatisch geladen und angezeigt.
+1. Lege das 3D-Modell (z.B. `rak3172sip.glb`) ins Verzeichnis
+2. Kopiere den "MAGIC"-Block mit Script und CSS in den `<head>`-Bereich deiner HTML-Seite
+3. Baue die Divs für den 3D-Inhalt in den Body, der Loader-Div ist optional
+4. Für jedes Modell einen Eintrag `view3d()` im "MAGIC"-Block setzen
+5. Script kann ggf. leicht als externe Datei (Modul) rauskopiert werden
 
 ## Abhängigkeiten
 - [three.js](https://threejs.org/) (wird per CDN eingebunden)
