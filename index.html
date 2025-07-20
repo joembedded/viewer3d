@@ -24,14 +24,13 @@
             top: 50%;
             transform: translate(-50%, -50%);
             z-index: 10;
-            font-size: 200%;
+            font-size: 150%;
             background: rgba(92, 91, 91, 0.9);
             padding: 1em 2em;
-            border-radius: 8px;
-            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
         }
 
         body {
+            box-sizing: border-box;
             background: #222;
             color: #eee;
             font-family: sans-serif;
@@ -63,16 +62,30 @@
         const container = document.getElementById('viewer');
         const scene = new THREE.Scene();
 
-        scene.background = new THREE.Color(0x202028); // use Color Background
-        new THREE.TextureLoader().load(
-            'sky.jpg',
-            function (bkTexture) {
-                bkTexture.mapping = THREE.EquirectangularReflectionMapping;
-                scene.environment = bkTexture;
-            });
+        // Funktion: Erzeuge einfarbiges Canvas Textur
+        function createCanvasTexture(colorTop, colorBottom) {
+            const size = 256;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const context = canvas.getContext('2d');
+            // Farbverlauf (oben -> unten)
+            const gradient = context.createLinearGradient(0, 0, 0, size);
+            gradient.addColorStop(0, colorTop);
+            gradient.addColorStop(1, colorBottom);
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, size, size);
+            return new THREE.CanvasTexture(canvas);
+        }
+        const bkTexture = createCanvasTexture('#ffffff', '#202030');
+        bkTexture.mapping = THREE.EquirectangularReflectionMapping;
+        scene.environment = bkTexture;
+        //scene.background = bkTexture; // kind of "Sky"
+        scene.background = new THREE.Color(0x202028); // better
 
         const camera = new THREE.PerspectiveCamera(30, container.clientWidth / container.clientHeight, 0.1, 1000);
-        camera.position.set(0, 2, 1);
+        const camTarget = new THREE.Vector3(0, 2, 0.5);
+        camera.position.set(-1, 0.5, 2);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio);
         //renderer.setSize(window.innerWidth, window.innerHeight); // variable size
@@ -87,7 +100,6 @@
             camera.aspect = container.clientWidth / container.clientHeight;
             camera.updateProjectionMatrix();
         });
-
 
         // 3. GLTF/GLB laden
         let model;
@@ -105,10 +117,10 @@
                 const center = new THREE.Vector3();
                 box.getCenter(center);
                 model.position.sub(center);
-                // Modell skalieren, sodass es 90% des Viewers füllt
+                // Modell skalieren, sodass es einigermassen den Viewer füllt
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z);
-                const desiredSize = 1.3;
+                const desiredSize = 1.3; /* Default-Size fürs Test-Model, kann man noch optimieren */
                 targetscale = desiredSize / maxDim;
                 scene.add(model);
                 modelscale = Math.max(model.scale.x, model.scale.y, model.scale.z);
@@ -122,32 +134,38 @@
                 // OPTIONAL: BoxHelper in ROT zum Anzeigen im Viewport
                 //const boxHelper = new THREE.BoxHelper(model, 0xff0000);
                 //scene.add(boxHelper);
-
                 if (loaderDiv) loaderDiv.style.display = 'none';
             },
             (xhr) => {
                 let proc = (xhr.loaded / xhr.total * 100).toFixed(1);
                 if (proc > 100) proc = 100;
-                console.log(`Geladen: ${proc}%`);
-                if (loaderDiv) loaderDiv.textContent = `Geladen: ${proc}%`;
+                if (loaderDiv) loaderDiv.textContent = (proc < 100) ? `Geladen: ${proc}%` : `Init 3D...`;
             },
             (error) => {
-                console.error('Fehler beim Laden:', error);
                 if (loaderDiv) loaderDiv.textContent = 'Fehler beim Laden: ' + error;
             }
         );
 
         // 4. Controls - erst aktivieren wenn alles geladen
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.1;
         // 5. Animation loop
+        const controls = new OrbitControls(camera, renderer.domElement);
+        let easeCam = true;
         function animate() {
             if (modelscale !== undefined) {
-                const ds = targetscale - modelscale;
-                modelscale += 0.25 * ds;
+                modelscale += 0.25 * (targetscale - modelscale); // ease to Size
                 model.scale.setScalar(modelscale);
+                const distance = camera.position.distanceTo(camTarget);
+                if (easeCam == true) {
+                    camera.position.x += 0.1 * (camTarget.x - camera.position.x); // ease Camera
+                    camera.position.y += 0.1 * (camTarget.y - camera.position.y);
+                    camera.position.z += 0.1 * (camTarget.z - camera.position.z);
+                    if (distance < 0.01) {  // Ab jetzt Auto-Rotate
+                        easeCam = false;
+                        controls.enableDamping = true;
+                        controls.autoRotate = true;
+                        controls.autoRotateSpeed = 0.05;
+                    }
+                }
             }
             controls.update();
             renderer.render(scene, camera);

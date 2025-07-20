@@ -7,12 +7,11 @@ Er eignet sich z.B. für die Darstellung von Leiterplatten-Modellen, wie sie etw
 
 ## Features
 - Anzeige von GLTF/GLB-Modellen im Browser
-- Zentrierung und automatische Skalierung des Modells
 - Steuerung per Maus/Touch (OrbitControls)
 - Ladeanzeige während des Modell-Ladevorgangs
 
 ## Benutzung
-1. Lege dein 3D-Modell (z.B. `rak3172sip.glb`) ins Verzeichnis (siehe `loader.load('rak3172sip.glb', ...)`)
+1. Lege das 3D-Modell (z.B. `rak3172sip.glb`) ins Verzeichnis (siehe `loader.load('rak3172sip.glb', ...)`)
 2. Öffne die `index.html` im Browser (am besten über einen lokalen Webserver, z.B. mit [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) für VS Code).
 3. Das Modell wird automatisch geladen und angezeigt.
 
