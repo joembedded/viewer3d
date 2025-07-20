@@ -83,12 +83,11 @@
         scene.background = new THREE.Color(0x202028); // better
 
         const camera = new THREE.PerspectiveCamera(30, container.clientWidth / container.clientHeight, 0.1, 1000);
-        const camTarget = new THREE.Vector3(0, 2, 0.5);
-        camera.position.set(-1, 0.5, 2);
+        camera.position.set(0, 2, 0.5);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio);
         //renderer.setSize(window.innerWidth, window.innerHeight); // variable size
-        renderer.setSize(container.clientWidth-2, container.clientHeight-2);
+        renderer.setSize(container.clientWidth - 2, container.clientHeight - 2);
         renderer.setAnimationLoop(animate);
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.toneMappingExposure = 1.2;
@@ -104,10 +103,11 @@
         let model;
         let targetscale;
         let modelscale;
+        let modRotTarget;
         const loader = new GLTFLoader();
         const loaderDiv = document.getElementById('loader');
         loader.load(
-            'rak3172sip.glb',
+            'rak3172sip.glb', 
             (gltf) => {
                 model = gltf.scene;
 
@@ -123,6 +123,9 @@
                 targetscale = desiredSize / maxDim;
                 scene.add(model);
                 modelscale = Math.max(model.scale.x, model.scale.y, model.scale.z);
+                model.scale.setScalar(0.1);
+                modRotTarget = new THREE.Vector3(0, 0, 0);
+                model.rotation.set(3.14, 1.7, 0.8);
 
                 // Ausgabe Box in der Konsole
                 console.log('BoundingBox min:', box.min);
@@ -148,23 +151,16 @@
         // 4. Controls - erst aktivieren wenn alles geladen
         // 5. Animation loop
         const controls = new OrbitControls(camera, renderer.domElement);
-        let easeCam = true;
+        controls.enableDamping = true;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.05;
         function animate() {
             if (modelscale !== undefined) {
                 modelscale += 0.25 * (targetscale - modelscale); // ease to Size
                 model.scale.setScalar(modelscale);
-                const distance = camera.position.distanceTo(camTarget);
-                if (easeCam == true) {
-                    camera.position.x += 0.1 * (camTarget.x - camera.position.x); // ease Camera
-                    camera.position.y += 0.1 * (camTarget.y - camera.position.y);
-                    camera.position.z += 0.1 * (camTarget.z - camera.position.z);
-                    if (distance < 0.01) {  // Ab jetzt Auto-Rotate
-                        easeCam = false;
-                        controls.enableDamping = true;
-                        controls.autoRotate = true;
-                        controls.autoRotateSpeed = 0.05;
-                    }
-                }
+                model.rotation.x += 0.15 * (modRotTarget.x - model.rotation.x); // and rotate
+                model.rotation.y += 0.12 * (modRotTarget.y - model.rotation.y);
+                model.rotation.z += 0.1 * (modRotTarget.z - model.rotation.z);
             }
             controls.update();
             renderer.render(scene, camera);
