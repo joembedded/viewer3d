@@ -17,12 +17,10 @@
     <!-- 3D Magic starts here (Init) -->
     <link rel="stylesheet" href="./jo3dview.css">
     <script type="importmap">
-			{
-				"imports": {
+			{ "imports": {
 					"three": "https://unpkg.com/three@latest/build/three.module.js",
 					"three/addons/": "https://unpkg.com/three@latest/examples/jsm/"
-				}
-			}
+			} }
 	</script>
     <script type="module" defer src="./jo3dview.js"></script>
     <!-- 3D Magic end (Init) -->
@@ -32,7 +30,7 @@
 <body>
     <h2>3D-Viewer - JoEmbedded</h2>
     <div>Relative View 1 (90%W * 40%H):</div>
-    <div id="mviewer" class="jo3dviewer" style=" width: 90vW; height: 40vh; border: 1px solid #ccc;">
+    <div id="mviewer" class="jo3dviewer" style="width: 90vW; height: 40vH; border: 1px solid #ccc;">
         <div id="mloader" class="jo3dloader"></div>
     </div>
     <div>Fixed View 2 (300px * 200px):</div>
