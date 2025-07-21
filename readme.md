@@ -12,13 +12,11 @@ Er eignet sich z.B. für die Darstellung von Leiterplatten-Modellen, wie sie etw
 
 ## Benutzung
 1. Lege das 3D-Modell (z.B. `rak3172sip.glb`) ins Verzeichnis
-2. Kopiere den "MAGIC"-Block mit Script und CSS in den `<head>`-Bereich deiner HTML-Seite
+2. Kopiere die "MAGIC"-Blöcke mit Script und CSS in deine HTML-Seite
 3. Baue die Divs für den 3D-Inhalt in den Body, der Loader-Div ist optional
 4. Für jedes Modell einen Eintrag `view3d()` im "MAGIC"-Block setzen
-5. Script kann ggf. leicht als externe Datei (Modul) rauskopiert werden
 
 ## Abhängigkeiten
 - [three.js](https://threejs.org/) (wird per CDN eingebunden)
 
 ---
-(c) JoEmbedded, 2025
