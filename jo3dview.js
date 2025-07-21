@@ -1,4 +1,4 @@
-/* jo3dview.js - V1.01 2025 (C) JoEmbedded.de - 3D Viewer Module */
+/* jo3dview.js - V1.03 2025 (C) JoEmbedded.de - 3D Viewer Module */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
