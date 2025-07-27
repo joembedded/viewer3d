@@ -1,9 +1,9 @@
-/* jo3dview.js - V1.03 2025 (C) JoEmbedded.de - 3D Viewer Module */
+/* jo3dview.js - V1.04 2025 (C) JoEmbedded.de - 3D Viewer Module */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined) {
+export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined, backimg = undefined) {
     const data3d = {
         container: document.getElementById(containerId),
         scene: new THREE.Scene()
@@ -23,16 +23,26 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
         context.fillRect(0, 0, size, size);
         return new THREE.CanvasTexture(canvas);
     }
-    const bkTexture = createCanvasTexture('#ffffff', '#202030');
-    bkTexture.mapping = THREE.EquirectangularReflectionMapping;
 
-    data3d.scene.environment = bkTexture;
-    //data3d.scene.background = bkTexture; // kind of "Sky"
-    data3d.scene.background = new THREE.Color(0x202028); // better
+    if (backimg === undefined) {
+        const bkTexture = createCanvasTexture('#ffffff', '#202030');
+        bkTexture.mapping = THREE.EquirectangularReflectionMapping;
+        data3d.scene.environment = bkTexture;
+        data3d.scene.background = new THREE.Color(0x202028); // better
+    } else {
+        const bkTexture = new THREE.TextureLoader().load(backimg)
+        bkTexture.mapping = THREE.EquirectangularReflectionMapping;
+        data3d.scene.environment = bkTexture;
+        data3d.scene.background = bkTexture;
+    }
 
     data3d.camera = new THREE.PerspectiveCamera(30, data3d.container.clientWidth / data3d.container.clientHeight, 0.1, 1000);
     data3d.camera.position.set(0, 2, 0.5);
     data3d.renderer = new THREE.WebGLRenderer({ antialias: true });
+    if (backimg !== undefined) {
+        data3d.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        data3d.renderer.outputEncoding=THREE.sRGBEncoding;
+    }
     data3d.renderer.setPixelRatio(window.devicePixelRatio);
     //data3d.renderer.setSize(window.innerWidth, window.innerHeight); // variable size
     data3d.renderer.setSize(data3d.container.clientWidth - 1, data3d.container.clientHeight - 1);
@@ -70,9 +80,9 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
             const maxDim = Math.max(size.x, size.y, size.z);
             const desiredSize = tscale; /* Default-Size fürs Test-Model, kann man noch optimieren */
             data3d.targetscale = desiredSize / maxDim;
-            data3d.scene.add(data3d.model);
             data3d.modelscale = Math.max(data3d.model.scale.x, data3d.model.scale.y, data3d.model.scale.z);
-            data3d.model.scale.setScalar(0.1);
+            data3d.model.scale.setScalar(0.01);
+            data3d.scene.add(data3d.model);
             data3d.modRotTarget = new THREE.Vector3(0, 0, 0);
             data3d.model.rotation.set(3.14, 1.7, 0.8);
 

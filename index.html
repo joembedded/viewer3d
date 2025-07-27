@@ -33,15 +33,22 @@
     <div id="mviewer" class="jo3dviewer" style="width: 90vW; height: 40vH; border: 1px solid #ccc;">
         <div id="mloader" class="jo3dloader"></div>
     </div>
-    <div>Fixed View 2 (300px * 200px):</div>
+    <div>Fixed View 2 with Parameters (300px * 200px):</div>
     <div id="vmini" style=" width:300px; height:200px; border: 1px solid #F00;" class="jo3dviewer">
         <div id="miniloader" class="jo3dloader"></div>
     </div>
     <!-- 3D Magic starts here (Use) -->
     <script type="module">
         import { view3d } from './jo3dview.js';
+        // Simple Display, no Background
         view3d('mviewer', './rak3172sip.glb', 1.2, 'mloader');
-        view3d('vmini', './testball.glb', 1.0, 'miniloader'); 
+
+        // Use Background and change Parameters
+        const d3img2 = view3d('vmini', './testball.glb' , 2.5, 'miniloader', './1024px-Ampleben_Panorama.jpg'); 
+        d3img2.scene.backgroundIntensity=0.5;
+        d3img2.renderer.toneMappingExposure = 0.8;
+        d3img2.camera.position.set(-1, 0.5, 2);
+        d3img2.controls.autoRotateSpeed = -2;
     </script>
     <!-- 3D Magic end (Use) -->
 </body>
