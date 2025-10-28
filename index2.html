@@ -17,11 +17,13 @@
     <!-- 3D Magic starts here (Init) -->
     <link rel="stylesheet" href="./jo3dview.css">
     <script type="importmap">
-			{ "imports": {
-					"three": "https://unpkg.com/three@latest/build/three.module.js",
-					"three/addons/": "https://unpkg.com/three@latest/examples/jsm/"
-			} }
-	</script>
+        {
+            "imports": {
+            "three": "./three/build/three.module.min.js",
+            "three/addons/": "./three/examples/jsm/"
+            }
+        }
+    </script>
     <script type="module" defer src="./jo3dview.js"></script>
     <!-- 3D Magic end (Init) -->
 
@@ -29,27 +31,172 @@
 
 <body>
     <h2>3D-Viewer - JoEmbedded</h2>
-    <div>Relative View (90%W * 60%H):</div>
-    <div id="mviewer" class="jo3dviewer" style="width: 90vW; height: 60vH; border: 1px solid #ccc;">
+    <div>Relative View (100%W * 50%H):</div>
+    <div id="mviewer" class="jo3dviewer" style=" height: 50vh; border: 1px solid #ccc;">
         <div id="mloader" class="jo3dloader"></div>
     </div>
-    <!-- <div>Fixed View 2 with Parameters (300px * 200px):</div> -->
-    <!-- <div id="vmini" style=" width:300px; height:200px; border: 1px solid #F00;" class="jo3dviewer">
-        <div id="miniloader" class="jo3dloader"></div>
-    </div> -->
+
+    <!-- Interface to BLX.js: -->
+    <div class="info"><b>Minimalistic use of 'blx.js' and 'blstore.js'</b></div>
+    <h6 style="margin-top: 5px; margin-bottom: 5px;">BlxTerminal:</h6>
+    <div id="blxTerminal" style="border: 1px solid gray; padding: 10px; border-radius: 5px;"></div>
+    <h6 style="margin-top: 15px; margin-bottom: 5px;">BlxCallbackConsole:</h6>
+    <div id="blxCallbackConsole" style="border: 1px solid dodgerblue; padding: 10px; border-radius: 5px;"></div>
+
     <!-- 3D Magic starts here (Use) -->
     <script type="module">
         import { view3d } from './jo3dview.js';
-        // Simple Display, no Background
-        view3d('mviewer', './rak3172sip.glb', 1.2, 'mloader');
+        import * as THREE from 'three'
 
-        // Use Background and change Parameters
-        //const d3img2 = view3d('vmini', './testball.glb' , 2.5, 'miniloader', './1024px-Ampleben_Panorama.jpg'); 
-        d3img2.scene.backgroundIntensity=0.5;
-        d3img2.renderer.toneMappingExposure = 0.8;
-        d3img2.camera.position.set(-1, 0.5, 2);
-        d3img2.controls.autoRotateSpeed = -2;
+        // Simple Display, no Background
+
+        const d3img2 = view3d('mviewer', './psensor.glb', 6, 'mloader', './1024px-Ampleben_Panorama.jpg', false);
+        let model;
+
+        d3img2.scene.backgroundIntensity = 0.3;
+        d3img2.renderer.toneMappingExposure = 1.5;
+        d3img2.camera.position.set(4, 1, 1);
+        d3img2.controls.autoRotateSpeed = 0.1;
+
+        const graviVectorNorm = new THREE.Vector3(0, -1, 0); // Len = 3 ist exakt G1.0
+
+        function tcalcR() { // Testberechnung Orientierungsvektor
+            if (model == undefined) return;
+            // gn im THREE-, gN im LTrack-Koordinatensystem
+            const gx = avx;
+            const gy = avy;
+            const gz = avz;
+            const zVector = new THREE.Vector3(gx, gy, gz);
+            const zTotal = zVector.length();
+            if (zTotal < 0.1) {
+                return; // g zu klein (Freifall?)
+            }
+            zVector.normalize()
+
+            const zgAngle = zVector.angleTo(graviVectorNorm)
+            const zgNormalVector = new THREE.Vector3().crossVectors(zVector, graviVectorNorm).normalize();
+            let zgNormalVectorLength = zgNormalVector.length();
+            if (zgNormalVectorLength < 0.0001) { // Sonderfall Z exakt in/gegen G-Richtung!
+                zgNormalVector.set(0, 0.0001, -0.9999)
+                zgNormalVectorLength = 1
+            }
+            const modelQuat = new THREE.Quaternion().setFromAxisAngle(zgNormalVector, zgAngle);
+            const hm = new THREE.Object3D();
+            hm.setRotationFromQuaternion(modelQuat);
+            d3img2.modRotTarget.x = hm.rotation.x;
+            d3img2.modRotTarget.y = hm.rotation.y;
+            d3img2.modRotTarget.z = hm.rotation.z;
+
+            const angleStr = (zgAngle * 180 / Math.PI).toFixed(2) + ' °'
+            console.log("Omega: ", angleStr)
+            // gui_ang.setValue(angleStr)
+        }
+        // Uebergabe von BLX gX,gY,gZ
+        let xfilter = [];
+        let yfilter = [];
+        let zfilter = [];
+        let avx = 0, // Aktuelle, letzte Averages
+            avy = 0,
+            avz = 0
+
+        function average(array) {
+            let sum = 0;
+            array.forEach((element) => {
+                sum += element;
+            });
+            return sum / array.length;
+        }
+        function boxpos(h) { // e.g. h = "0 1000 -500"; // BLX Holdeposition
+            model = d3img2.model; // Wenn geladenesModell da
+            if (h !== undefined && h != '' && model !== undefined) {
+                const v = h.split(' ').map((e) => parseInt(e) / 1000);
+                const gx = v[1],
+                    gy = v[2],
+                    gz = v[0];
+                //console.log("g:", gx, gy, gz);
+                const delta = Math.sqrt((avx - gx) * (avx - gx) + (avy - gy) * (avy - gy) + (avz - gz) * (avz - gz)) // Delta to average
+                //console.log(delta); 
+                if (delta > 0.1) { // Trigger: Empty Array
+                    xfilter = [];
+                    yfilter = [];
+                    zfilter = [];
+                    //console.log("");
+                }
+                const filterlen = 5 // Filterlen 5 ganz OK
+                xfilter.push(gx);
+                if (xfilter.length > filterlen) xfilter.shift();
+                yfilter.push(gy);
+                if (yfilter.length > filterlen) yfilter.shift();
+                zfilter.push(gz);
+                if (zfilter.length > filterlen) zfilter.shift();
+                // Die gefilterten Werte:
+                avx = average(xfilter);
+                avy = average(yfilter);
+                avz = average(zfilter);
+                tcalcR()
+            }
+        }
+
+
+        //----------------------------------------------
+
+        import './js/blx.js'
+        import './js/blStore.js'
+
+        //import {blx} from './js/blx.js'
+
+        const VERSION = 'V0.01 / 28.10.2025'
+        const COPYRIGHT = '(C)JoEmbedded.de'
+
+        document.querySelector('.info').innerHTML += `<br>${VERSION} - ${COPYRIGHT}`;
+
+        const maxConsoleLines = 10;
+        let totalCount = 1;
+        let consoleLines = [];
+
+        // This callback receives messages from blx.js - Callback  m:Message, v:Value, xinfo:Text
+        function bleCallback(m, v, xinfo) {
+            let output = '';
+            switch (m) {
+                case 'CON':
+                    output = "CON-Level: " + v;
+                    break;
+                case 'RSSI':
+                    output = `RSSI: ${v} dBm`;
+                    break;
+                case 'INFO':
+                    output = "INFO: " + xinfo;
+                    break;
+                case 'MSG':
+                    output = "MSG " + v + ": " + xinfo;
+                    break;
+                case 'WARN':
+                    output = "WARNING " + v + ": " + xinfo;
+                    break;
+                case 'ERR':
+                    output = "ERROR " + v + ": " + xinfo;
+                    break;
+                default:
+                    output = "BLX: " + m +", "+ v +", "+ xinfo;
+                    if(m=="VSENS" && xinfo=="A"){
+                        boxpos(v); // 
+                    }
+                }
+            console.log(output); // Log to console
+            consoleLines.push(`${totalCount++}: ${output}`); // Add to console display
+            if (consoleLines.length > maxConsoleLines) {
+                consoleLines.shift();
+            }
+            document.getElementById('blxCallbackConsole').innerHTML = consoleLines.join('<br>');
+        }
+
+        // *** Setup ***
+        blx.setTerminal('blxTerminal', bleCallback)
+        const terminalInput = blx.terminalGetInput()
+
+
     </script>
     <!-- 3D Magic end (Use) -->
 </body>
+
 </html>

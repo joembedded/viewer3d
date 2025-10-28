@@ -17,11 +17,14 @@
     <!-- 3D Magic starts here (Init) -->
     <link rel="stylesheet" href="./jo3dview.css">
     <script type="importmap">
-			{ "imports": {
-					"three": "https://unpkg.com/three@latest/build/three.module.js",
-					"three/addons/": "https://unpkg.com/three@latest/examples/jsm/"
-			} }
-	</script>
+        {
+            "imports": {
+            "three": "./three/build/three.module.min.js",
+            "three/addons/": "./three/examples/jsm/"
+            }
+        }
+
+    </script>
     <script type="module" defer src="./jo3dview.js"></script>
     <!-- 3D Magic end (Init) -->
 
@@ -44,12 +47,13 @@
         view3d('mviewer', './rak3172sip.glb', 1.2, 'mloader');
 
         // Use Background and change Parameters
-        const d3img2 = view3d('vmini', './testball.glb' , 2.5, 'miniloader', './1024px-Ampleben_Panorama.jpg'); 
-        d3img2.scene.backgroundIntensity=0.5;
+        const d3img2 = view3d('vmini', './testball.glb', 2.5, 'miniloader', './1024px-Ampleben_Panorama.jpg');
+        d3img2.scene.backgroundIntensity = 0.5;
         d3img2.renderer.toneMappingExposure = 0.8;
         d3img2.camera.position.set(-1, 0.5, 2);
         d3img2.controls.autoRotateSpeed = -2;
     </script>
     <!-- 3D Magic end (Use) -->
 </body>
+
 </html>

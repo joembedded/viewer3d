@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined, backimg = undefined) {
+export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined, backimg = undefined, shift2org = true) {
     const data3d = {
         container: document.getElementById(containerId),
         scene: new THREE.Scene()
@@ -74,7 +74,7 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
             const box = new THREE.Box3().setFromObject(data3d.model);
             const center = new THREE.Vector3();
             box.getCenter(center);
-            data3d.model.position.sub(center);
+            if(shift2org)data3d.model.position.sub(center);
             // Modell skalieren, sodass es einigermassen den Viewer füllt
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
