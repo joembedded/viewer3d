@@ -18,6 +18,12 @@ It is suitable, for example, for displaying PCB models, such as those generated 
 3. Add the divs for the 3D content to the body; the loader div is optional
 4. For each model, add an entry `view3d()` in the "MAGIC" block
 
+## INDEX2.HTML
+This demo uses a Bluetooth-Connection to display the orientation of a Sensor.
+- Click 'Connect'
+- If PIN is required: enter it as '.i PIN' manually (will be saved)
+- Clicking 'Start' the model follows the real orientation (takes about 5 sec. to start)
+
 ## Dependencies
 - [three.js](https://threejs.org/) - Stripped copy as local copy in ./three/...
 

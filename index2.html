@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<!-- dieses kleine Tool laedt ein GLB Modell -->
+<!-- dieses kleine Tool laedt ein GLB Modell und bewegt es dynamisch, falls ein BLE Verbindung besteht -->
 <!-- (C)JoEmbedded -->
 <html lang="en">
 
 <head>
     <meta charset="UTF-8" />
-    <title>3D-Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D-Viewer, Index2.html</title>
     <style>
         body {
             background: #444141;
@@ -38,19 +39,26 @@
 
     <!-- Interface to BLX.js: -->
     <div class="info"><b>Minimalistic use of 'blx.js' and 'blstore.js'</b></div>
-    <h6 style="margin-top: 5px; margin-bottom: 5px;">BlxTerminal:</h6>
-    <div id="blxTerminal" style="border: 1px solid gray; padding: 10px; border-radius: 5px;"></div>
-    <h6 style="margin-top: 15px; margin-bottom: 5px;">BlxCallbackConsole:</h6>
-    <div id="blxCallbackConsole" style="border: 1px solid dodgerblue; padding: 10px; border-radius: 5px;"></div>
+    <div style="display: flex; gap: 10px;">
+        <div style="border: 1px solid gray; padding: 10px; border-radius: 5px;">
+            <button id="startButton" style="padding: 10px 20px; font-size: 16px;">Connect</button>
+        </div>
+        <div style="flex: 1; border: 1px solid gray; padding: 10px; border-radius: 5px;">
+            <h6 style="margin-top: 5px; margin-bottom: 5px;">BlxTerminal:</h6>
+            <div id="blxTerminal" style="border: 1px solid gray; padding: 10px; border-radius: 5px;"></div>
+            <h6 style="margin-top: 15px; margin-bottom: 5px;">BlxCallbackConsole:</h6>
+            <div id="blxCallbackConsole" style="border: 1px solid dodgerblue; padding: 10px; border-radius: 5px;"></div>
+        </div>
+
+    </div>
 
     <!-- 3D Magic starts here (Use) -->
     <script type="module">
         import { view3d } from './jo3dview.js';
         import * as THREE from 'three'
 
-        // Simple Display, no Background
-
-        const d3img2 = view3d('mviewer', './psensor.glb', 6, 'mloader', './1024px-Ampleben_Panorama.jpg', false);
+        const backimg = './1024px-Ampleben_Panorama.jpg' // from Wikipedia https://de.wikipedia.org/wiki/Datei:Ampleben_Panorama.jpg
+        const d3img2 = view3d('mviewer', './psensor.glb', 6, 'mloader', backimg, false);
         let model;
 
         d3img2.scene.backgroundIntensity = 0.3;
@@ -143,12 +151,12 @@
         import './js/blx.js'
         import './js/blStore.js'
 
-        //import {blx} from './js/blx.js'
-
-        const VERSION = 'V0.01 / 28.10.2025'
+        const VERSION = 'V0.10 / 30.10.2025'
         const COPYRIGHT = '(C)JoEmbedded.de'
-
         document.querySelector('.info').innerHTML += `<br>${VERSION} - ${COPYRIGHT}`;
+
+        let connectionLevel = 0;
+        let startRawScanCalled = false;
 
         const maxConsoleLines = 10;
         let totalCount = 1;
@@ -160,6 +168,8 @@
             switch (m) {
                 case 'CON':
                     output = "CON-Level: " + v;
+                    connectionLevel = v
+                    connectionChanged();
                     break;
                 case 'RSSI':
                     output = `RSSI: ${v} dBm`;
@@ -177,11 +187,11 @@
                     output = "ERROR " + v + ": " + xinfo;
                     break;
                 default:
-                    output = "BLX: " + m +", "+ v +", "+ xinfo;
-                    if(m=="VSENS" && xinfo=="A"){
+                    output = "BLX: " + m + ", " + v + ", " + xinfo;
+                    if (m == "VSENS" && xinfo == "A") {
                         boxpos(v); // 
                     }
-                }
+            }
             console.log(output); // Log to console
             consoleLines.push(`${totalCount++}: ${output}`); // Add to console display
             if (consoleLines.length > maxConsoleLines) {
@@ -190,10 +200,53 @@
             document.getElementById('blxCallbackConsole').innerHTML = consoleLines.join('<br>');
         }
 
+        // Change Button Funktion according to connection level
+        function connectionChanged() {
+            const button = document.getElementById('startButton');
+            startRawScanCalled = false;
+            if (connectionLevel === 0 || connectionLevel === 1) {
+                button.textContent = 'Connect';
+            } else if (connectionLevel === 4) {
+                button.textContent = 'Start';
+            } else {
+                button.textContent = 'Busy...';
+            }
+        }
+
+        // Button will connect only, if PIN is known. Maybe manually enter via ".i <PIN>" command in terminal ONCE!
+        async function clickedButton() {
+            document.getElementById('startButton').disabled = true;
+            try {
+                if (connectionLevel === 0 || connectionLevel === 1) await blx.userSendCmd(".c");
+                else if (connectionLevel === 4) {
+                    const blxID = blx.getDevice();
+                    if (blxID.deviceType == 312) {   // OSX Piezo with Orientation Sensor
+                        if (!startRawScanCalled) {
+                            await blx.userSendCmd("pp"); // Start Scan
+                            startRawScanCalled = true;
+                            document.getElementById('startButton').textContent = 'Stop';
+                        } else {
+                            await blx.userSendCmd("p"); // Stop Scan
+                            startRawScanCalled = false;
+                            document.getElementById('startButton').textContent = 'Start';
+                        }
+                    } else {
+                        blx.terminalPrint("*** Wrong Sensor Type for Orientation Data ***");
+                    }
+                }
+            } catch (error) {
+                blx.terminalPrint("*** Error: " + error);
+            }
+            document.getElementById('startButton').disabled = false;
+        }
+
+
+
         // *** Setup ***
         blx.setTerminal('blxTerminal', bleCallback)
         const terminalInput = blx.terminalGetInput()
 
+        document.getElementById('startButton').addEventListener('click', clickedButton);
 
     </script>
     <!-- 3D Magic end (Use) -->

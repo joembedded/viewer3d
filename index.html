@@ -46,7 +46,7 @@
         // Simple Display, no Background
         view3d('mviewer', './rak3172sip.glb', 1.2, 'mloader');
 
-        // Use Background and change Parameters
+        // Use Background and change Parameters - from Wikipedia https://de.wikipedia.org/wiki/Datei:Ampleben_Panorama.jpg
         const d3img2 = view3d('vmini', './testball.glb', 2.5, 'miniloader', './1024px-Ampleben_Panorama.jpg');
         d3img2.scene.backgroundIntensity = 0.5;
         d3img2.renderer.toneMappingExposure = 0.8;
