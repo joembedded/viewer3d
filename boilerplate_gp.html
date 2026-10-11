@@ -55,11 +55,22 @@
     </footer>
     <script type="module">
         import { view3dDocumentation } from './jo3dview.js?v=20261011-realism';
+        import { ACESFilmicToneMapping, MathUtils } from 'three';
         const viewer = view3dDocumentation('mviewer', {
-            model: './testball-optimized.glb',
-            background: './southern-germany.webp',
+            model: './GeoPrecision_Rundlogger.glb',
+            background: './GeoPrecisionLab.png',
             loaderId: 'mloader', toolbarId: 'viewer-controls',
+            toneMapping: ACESFilmicToneMapping, exposure: 1.15,
+            backgroundIntensity: 0.45, environmentIntensity: 2,
+            size: 1.1, cameraPosition: [-0.12, 0.1, 0.87],
+            framingAspect: 1.6,
             autoRotatePause: 10
+        });
+        viewer.ready.then(() => {
+            // Keep a slight diagonal tilt, including after resetting the view.
+            viewer.modRotTarget.z = MathUtils.degToRad(12);
+            viewer.model.rotation.z = viewer.modRotTarget.z;
+            viewer.invalidate();
         });
         // For a documentation SPA: call viewer.dispose() on unmount.
     </script>
