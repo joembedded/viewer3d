@@ -5,6 +5,8 @@ It is suitable, for example, for displaying PCB models, such as those generated 
 
 [Live Demo](https://joembedded.github.io/viewer3d/index.html)
 
+[Live Demo (only PCB with Background)](https://joembedded.github.io/viewer3d/jpiot.html)
+
 [Live Demo (OSX Sensor with g-Sensor)](https://joembedded.github.io/viewer3d/index2.html)
 
 ## Features
