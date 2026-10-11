@@ -31,6 +31,7 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
         data3d.scene.background = new THREE.Color(0x202028); // better
     } else {
         const bkTexture = new THREE.TextureLoader().load(backimg)
+        bkTexture.colorSpace = THREE.SRGBColorSpace;
         bkTexture.mapping = THREE.EquirectangularReflectionMapping;
         data3d.scene.environment = bkTexture;
         data3d.scene.background = bkTexture;
@@ -39,23 +40,28 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
     data3d.camera = new THREE.PerspectiveCamera(30, data3d.container.clientWidth / data3d.container.clientHeight, 0.1, 1000);
     data3d.camera.position.set(0, 2, 0.5);
     data3d.renderer = new THREE.WebGLRenderer({ antialias: true });
-    if (backimg !== undefined) {
-        data3d.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        data3d.renderer.outputEncoding=THREE.sRGBEncoding;
-    }
-    data3d.renderer.setPixelRatio(window.devicePixelRatio);
-    //data3d.renderer.setSize(window.innerWidth, window.innerHeight); // variable size
-    data3d.renderer.setSize(data3d.container.clientWidth - 1, data3d.container.clientHeight - 1);
     data3d.renderer.setAnimationLoop(animate);
-    data3d.renderer.outputEncoding = THREE.sRGBEncoding;
+    data3d.renderer.outputColorSpace = THREE.SRGBColorSpace;
     data3d.renderer.toneMappingExposure = 1.2;
     data3d.renderer.toneMapping = THREE.LinearToneMapping;
     data3d.container.appendChild(data3d.renderer.domElement);
-    window.addEventListener('resize', () => {
-        data3d.renderer.setSize(data3d.container.clientWidth - 1, data3d.container.clientHeight - 1);
-        data3d.camera.aspect = data3d.container.clientWidth / data3d.container.clientHeight;
+    function resizeViewer() {
+        const width = Math.max(1, data3d.container.clientWidth);
+        const height = Math.max(1, data3d.container.clientHeight);
+        // Cap GPU work on high-density phones; CSS fills the exact inner border.
+        data3d.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        data3d.renderer.setSize(width, height, false);
+        data3d.camera.aspect = width / height;
+        // Allow extra horizontal room in portrait for the rotating PCB's diagonal.
+        data3d.camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(
+            Math.tan(THREE.MathUtils.degToRad(30) / 2) / Math.min(1, width / height / 1.35)
+        ));
         data3d.camera.updateProjectionMatrix();
-    });
+    }
+    resizeViewer();
+    data3d.resizeObserver = new ResizeObserver(resizeViewer);
+    data3d.resizeObserver.observe(data3d.container);
+    window.addEventListener('resize', resizeViewer);
 
     // GLTF/GLB laden
     data3d.modelscale = undefined; // set after full loaded!
@@ -74,7 +80,14 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
             const box = new THREE.Box3().setFromObject(data3d.model);
             const center = new THREE.Vector3();
             box.getCenter(center);
-            if(shift2org)data3d.model.position.sub(center);
+            if (shift2org) {
+                // Center the content inside a group so scaling and rotation also
+                // transform the offset, rather than shifting the PCB off center.
+                data3d.model.position.sub(center);
+                const centeredModel = new THREE.Group();
+                centeredModel.add(data3d.model);
+                data3d.model = centeredModel;
+            }
             // Modell skalieren, sodass es einigermassen den Viewer füllt
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);

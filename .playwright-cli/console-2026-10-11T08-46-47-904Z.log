@@ -1,0 +1,25 @@
+[     853ms] [LOG] Model: ./view3d_browser.glb @ http://127.0.0.1:8765/jo3dview.js:89
+[     853ms] [LOG] BoundingBox min: Ks @ http://127.0.0.1:8765/jo3dview.js:90
+[     854ms] [LOG] BoundingBox max: Ks @ http://127.0.0.1:8765/jo3dview.js:91
+[     855ms] [LOG] Size: Ks @ http://127.0.0.1:8765/jo3dview.js:92
+[     855ms] [LOG] Center: Ks @ http://127.0.0.1:8765/jo3dview.js:93
+[  151075ms] [LOG] Model: ./view3d_browser.glb @ http://127.0.0.1:8765/jo3dview.js:89
+[  151075ms] [LOG] BoundingBox min: Ks @ http://127.0.0.1:8765/jo3dview.js:90
+[  151075ms] [LOG] BoundingBox max: Ks @ http://127.0.0.1:8765/jo3dview.js:91
+[  151076ms] [LOG] Size: Ks @ http://127.0.0.1:8765/jo3dview.js:92
+[  151076ms] [LOG] Center: Ks @ http://127.0.0.1:8765/jo3dview.js:93
+[  202105ms] [LOG] Model: ./view3d_browser.glb @ http://127.0.0.1:8765/jo3dview.js?v=20261011:95
+[  202105ms] [LOG] BoundingBox min: Ks @ http://127.0.0.1:8765/jo3dview.js?v=20261011:96
+[  202106ms] [LOG] BoundingBox max: Ks @ http://127.0.0.1:8765/jo3dview.js?v=20261011:97
+[  202106ms] [LOG] Size: Ks @ http://127.0.0.1:8765/jo3dview.js?v=20261011:98
+[  202106ms] [LOG] Center: Ks @ http://127.0.0.1:8765/jo3dview.js?v=20261011:99
+[  370040ms] [LOG] Model: ./testball.glb @ http://127.0.0.1:8765/jo3dview.js:102
+[  370040ms] [LOG] BoundingBox min: Ks @ http://127.0.0.1:8765/jo3dview.js:103
+[  370040ms] [LOG] BoundingBox max: Ks @ http://127.0.0.1:8765/jo3dview.js:104
+[  370040ms] [LOG] Size: Ks @ http://127.0.0.1:8765/jo3dview.js:105
+[  370040ms] [LOG] Center: Ks @ http://127.0.0.1:8765/jo3dview.js:106
+[  370318ms] [LOG] Model: ./rak3172sip.glb @ http://127.0.0.1:8765/jo3dview.js:102
+[  370318ms] [LOG] BoundingBox min: Ks @ http://127.0.0.1:8765/jo3dview.js:103
+[  370318ms] [LOG] BoundingBox max: Ks @ http://127.0.0.1:8765/jo3dview.js:104
+[  370318ms] [LOG] Size: Ks @ http://127.0.0.1:8765/jo3dview.js:105
+[  370318ms] [LOG] Center: Ks @ http://127.0.0.1:8765/jo3dview.js:106

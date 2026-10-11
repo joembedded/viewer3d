@@ -2,6 +2,13 @@
 .jo3dviewer {
     box-sizing: border-box;
     position: relative;
+    overflow: hidden;
+}
+
+.jo3dviewer > canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .jo3dloader {
