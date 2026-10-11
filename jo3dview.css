@@ -22,3 +22,18 @@
     padding: 0.7em 1.2em;
     pointer-events: none;
 }
+
+.jo3dtoolbar { display: flex; flex-wrap: wrap; gap: 6px; }
+.jo3dtoolbar button {
+    min-height: 36px; padding: 6px 12px; border: 1px solid #52616e;
+    border-radius: 6px; background: #252e36; color: #edf2f5;
+    font: inherit; font-size: .8125rem; cursor: pointer;
+}
+.jo3dtoolbar button:hover { background: #34424e; }
+.jo3dtoolbar button[aria-pressed="true"] { background: #344754; border-color: #8babbf; }
+.jo3dtoolbar button:focus-visible, .jo3dviewer canvas:focus-visible {
+    outline: 2px solid #b7ddf4; outline-offset: -3px;
+}
+@media (max-width: 480px) {
+    .jo3dtoolbar button { min-height: 40px; padding: 6px 10px; }
+}

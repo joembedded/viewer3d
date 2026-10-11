@@ -26,6 +26,74 @@ This demo uses a Bluetooth-Connection to display the orientation of a Sensor.
 - If PIN is required: enter it as '.i PIN' manually (will be saved)
 - Clicking 'Start' the model follows the real orientation (takes about 5 sec. to start)
 
+## Quick-Start
+
+- use `boilerplate.html`
+
+### Documentation preset
+
+Serve the directory over HTTP (for example `python -m http.server 8765`) and open
+`http://localhost:8765/boilerplate.html`. ES modules and GLB loading require HTTP.
+The HTML only supplies layout and assets; rendering, toolbar controls and the
+interaction pause are implemented in `jo3dview.js`.
+
+```js
+import { view3dDocumentation } from './jo3dview.js';
+const viewer = view3dDocumentation('mviewer', {
+    model: './testball-optimized.glb',
+    background: './southern-germany.webp',
+    loaderId: 'mloader',
+    toolbarId: 'viewer-controls', // optional; controls are generated here
+    autoRotatePause: 10          // seconds after the last drag/touch/wheel gesture
+});
+await viewer.ready;             // model loaded; rejects on a model load error
+// viewer.setAutoRotate(false); // permanent stop, independent of interaction pause
+// viewer.setNeutralBackground(true); // preserves environment illumination
+// viewer.resetView();
+// viewer.invalidate();         // after changing scene/material settings directly
+// viewer.dispose();            // required on removal/unmount in a documentation SPA
+```
+
+The preset uses a 48° vertical field of view in landscape, portrait framing,
+ACES tone mapping, exposure 1.05, environment intensity 1.25 and background
+intensity 0.85. Override these with `fov`, `exposure`, `environmentIntensity`,
+`backgroundIntensity` or `cameraPosition: [x, y, z]`. The default normalized
+model size is `size: 1.1`. Model materials are retained without runtime overrides.
+Rotation defaults to off when the system requests reduced motion; the user may
+enable it explicitly. Dragging pauses rotation for the entire gesture and for
+10 seconds after release; each subsequent gesture restarts the delay.
+
+The pixel ratio is capped at 1.75 and the drawing buffer at 3 million pixels
+(`maxPixelRatio`, `maxPixels`). Static views skip rendering; hidden and offscreen
+views skip updates/rendering. The lightweight animation callback remains active
+to detect rotation resumes and model orientation changes. `dispose()` releases
+controls, observers, geometry, textures and the renderer. Existing `view3d()`
+calls still work; its optional seventh argument accepts the rendering options.
+Use `setAutoRotate()` for explicit changes while an interaction pause is active.
+
+### Demo asset optimization
+
+| Asset | Original | Active derivative |
+| --- | ---: | ---: |
+| Test model | 388,592 bytes | 61,452 bytes |
+| Panorama | 850,550 bytes, 2912 × 1440 | 550,258 bytes, 2560 × 1266 |
+| Total | 1,239,142 bytes | 611,710 bytes (about 51% less) |
+
+`testball-optimized.glb` retains the geometry, removes the coarse masonry bump
+texture and blue emission, and uses polished aluminium (metalness 1, roughness
+0.10), red polymer (roughness 0.30) and a satin metal rod (roughness 0.28).
+The original model remains available to the older demo pages.
+`southern-germany.webp` uses WebP quality 85. Its smaller dimensions reduce the
+base panorama pixel count by about 23%; WebP compression alone does not reduce
+decoded GPU texture memory. Geometry needs no extra compression decoder.
+
+Rebuild the derivatives with `python tools/optimize-demo.py` (requires Pillow).
+Original files and the previous viewer implementation are saved in
+`backups/realism-20261011-142249/`. The intermediate matte model is also saved there.
+The source panorama is an LDR photograph: it supports natural reflections but
+cannot reproduce the full light range of a true HDR environment. No artificial
+contact shadow is added to the aerial panorama, which has no matching ground geometry.
+
 ## Dependencies
 - [three.js](https://threejs.org/) - Stripped copy as local copy in ./three/...
 
