@@ -31,7 +31,7 @@
 </head>
 
 <body>
-    <h2>3D-Viewer - JoEmbedded</h2>
+    <h2>JoEmbedded-Labs</h2>
     <div>JPIoT Hardware V0.2.1:</div>
     <div id="mviewer" class="jo3dviewer" style="width: 90vW; height: 80vH; border: 1px solid #ccc;">
         <div id="mloader" class="jo3dloader"></div>
@@ -40,7 +40,7 @@
     <script type="module">
         import { view3d } from './jo3dview.js';
         // Simple Display, no Background
-        const d3img2 = view3d('mviewer', './view3d.glb', 1.2, 'mloader','./1024px_ki_panorama.jpg');
+        const d3img2 = view3d('mviewer', './view3d_browser.glb', 1.2, 'mloader','./Elektroniklabors.png');
         d3img2.scene.backgroundIntensity = 0.5;
         d3img2.renderer.toneMappingExposure = 0.8;
         d3img2.camera.position.set(-1, 0.5, 2);
