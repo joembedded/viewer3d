@@ -276,7 +276,7 @@ export function view3dDocumentation(containerId, {
     });
     viewer.camera.position.fromArray(cameraPosition);
     viewer.controls.enablePan = false;
-    viewer.controls.minDistance = size * 0.77;
+    viewer.controls.minDistance = size * 0.5;
     viewer.controls.maxDistance = size * 5.5;
     viewer.controls.update();
     viewer.controls.saveState();

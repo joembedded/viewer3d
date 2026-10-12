@@ -62,12 +62,13 @@
             loaderId: 'mloader', toolbarId: 'viewer-controls',
             toneMapping: ACESFilmicToneMapping, exposure: 1.15,
             backgroundIntensity: 0.45, environmentIntensity: 2,
-            size: 1.1, cameraPosition: [-0.12, 0.1, 0.87],
+            size: 1, cameraPosition: [-0.12, 0.1, 0.87],
             framingAspect: 1.6,
             autoRotatePause: 10
         });
         viewer.ready.then(() => {
             // Keep a slight diagonal tilt, including after resetting the view.
+            viewer.controls.minDistance = 0.5; 
             viewer.modRotTarget.z = MathUtils.degToRad(12);
             viewer.model.rotation.z = viewer.modRotTarget.z;
             viewer.invalidate();
