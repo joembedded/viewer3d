@@ -1,5 +1,0 @@
-- generic [active] [ref=e1]:
-  - banner [ref=e2]:
-    - heading "JoEmbedded-Labs" [level=1] [ref=e3]
-    - paragraph [ref=e4]: JPIoT Hardware V0.2.1
-  - main "Interactive 3D view of the JPIoT circuit board" [ref=e5]

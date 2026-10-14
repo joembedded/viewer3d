@@ -1,2 +1,6 @@
 three.js-master/
 backups/
+output/
+.playwright-cli/
+__pycache__/
+*.pyc

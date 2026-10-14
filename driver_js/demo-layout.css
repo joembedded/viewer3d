@@ -1,0 +1,29 @@
+/* Shared layout for the introductory and Bluetooth demos. */
+html { color-scheme: dark; }
+* { box-sizing: border-box; }
+body {
+    min-height: 100vh;
+    margin: 0;
+    padding: 5vh 5vw;
+    background: #202830;
+    color: #edf2f5;
+    font-family: system-ui, sans-serif;
+}
+h1 { margin: 0 0 1rem; font-size: clamp(1.25rem, 3vw, 1.75rem); }
+h2 { margin: 1.25rem 0 .5rem; font-size: 1rem; }
+p { line-height: 1.5; }
+a { color: #b7ddf4; }
+.demo-links { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin-bottom: 1.25rem; }
+.jo3dviewer { width: 100%; border: 1px solid #647780; border-radius: 8px; }
+.demo-primary { height: 40vh; min-height: 180px; }
+.demo-mini { width: min(300px, 100%); height: 200px; }
+.sensor-view { height: 50vh; min-height: 200px; }
+.info { margin: 1rem 0; }
+.ble-panels { display: flex; flex-wrap: wrap; gap: 10px; }
+.ble-panel { min-width: 0; padding: 10px; border: 1px solid #647780; border-radius: 6px; }
+.ble-console { flex: 1 1 300px; }
+.ble-console h2 { margin: .3rem 0 .5rem; }
+.ble-console h2:not(:first-child) { margin-top: 1rem; }
+#blxTerminal, #blxCallbackConsole { overflow-wrap: anywhere; padding: 10px; border: 1px solid #647780; border-radius: 5px; }
+#blxCallbackConsole { border-color: #6bafe5; }
+#startButton { padding: 10px 20px; font: inherit; cursor: pointer; }

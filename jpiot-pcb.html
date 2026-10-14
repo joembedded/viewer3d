@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<!-- dieses kleine Tool laedt ein GLB Modell -->
+<!-- (C)JoEmbedded -->
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#181e24" />
+    <title>JPIoT Circuit Board · JoEmbedded</title>
+    <style>
+        html { color-scheme: dark; }
+        body {
+            box-sizing: border-box;
+            height: 100vh;
+            height: 100dvh;
+            margin: 0;
+            padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+                max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #181e24;
+            color: #edf2f5;
+            font-family: system-ui, sans-serif;
+        }
+        .page-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 4px 16px;
+            padding: 2px 4px;
+        }
+        h1 { margin: 0; font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 600; }
+        .page-header p { margin: 0; color: #aebcc7; font-size: 0.8125rem; }
+        #mviewer {
+            flex: 1;
+            min-height: 160px;
+            width: 100%;
+            border: 1px solid #647780;
+            border-radius: 12px;
+            background: #202830;
+            box-shadow: 0 3px 12px #0003;
+        }
+        #mloader {
+            max-width: calc(100% - 32px);
+            box-sizing: border-box;
+            border: 1px solid #647780;
+            border-radius: 8px;
+            background: #202830;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+        @media (max-width: 480px) {
+            body { gap: 8px; }
+            #mviewer { border-radius: 9px; }
+        }
+    </style>
+
+    <!-- 3D Magic starts here (Init) -->
+    <link rel="stylesheet" href="./driver_js/jo3dview.css?v=20261011">
+    <script type="importmap">
+        {
+            "imports": {
+            "three": "./driver_js/three/build/three.module.min.js",
+            "three/addons/": "./driver_js/three/examples/jsm/"
+            }
+        }
+
+    </script>
+    <!-- 3D Magic end (Init) -->
+
+    <link rel="stylesheet" href="./driver_js/page-layout.css?v=20261014-centered">
+</head>
+
+<body>
+    <nav class="page-navigation" aria-label="Seitennavigation">
+        <a class="back-link" href="./index.html" lang="de"><span aria-hidden="true">←</span> Zurück</a>
+    </nav>
+    <header class="page-header">
+        <h1>JoEmbedded-Labs</h1>
+        <p>JPIoT Hardware V0.2.1</p>
+    </header>
+    <main id="mviewer" class="jo3dviewer" aria-label="Interactive 3D view of the JPIoT circuit board">
+        <div id="mloader" class="jo3dloader" role="status">Loading...</div>
+    </main>
+    <!-- 3D Magic starts here (Use) -->
+    <script type="module">
+        import { view3d } from './driver_js/jo3dview.js?v=20261011';
+        import { ACESFilmicToneMapping, DirectionalLight, Object3D, PCFSoftShadowMap } from 'three';
+
+        // The PNG supplies reflections and diffuse fill. Its visible background
+        // is controlled separately, so dimming the room never dims the PCB.
+        const d3img2 = view3d('mviewer', './models/view3d_opt.glb', 1.1, 'mloader',
+            './skyboxes/industrial_skybox.png', true, {
+                toneMapping: ACESFilmicToneMapping,
+                exposure: 1.1,
+                environmentIntensity: 1.15,
+                backgroundIntensity: 0.12,
+                backgroundBlurriness: 0.025,
+                autoRotate: !matchMedia('(prefers-reduced-motion: reduce)').matches,
+                autoRotateSpeed: -0.5
+            });
+        d3img2.camera.position.set(-1, 2, 2);
+        d3img2.controls.update();
+
+        // Camera-relative studio lighting also illuminates the underside when
+        // orbiting. The LDR panorama alone cannot supply bright studio lights.
+        const lightTarget = new Object3D();
+        d3img2.scene.add(lightTarget, d3img2.camera);
+        function studioLight(intensity, x, y, z) {
+            const light = new DirectionalLight(0xffffff, intensity);
+            light.position.set(x, y, z);
+            light.target = lightTarget;
+            d3img2.camera.add(light);
+            return light;
+        }
+        const keyLight = studioLight(1.8, -3, 4, 2);
+        const fillLight = studioLight(0.4, 4, 0, 1);
+        const rimLight = studioLight(0.8, 1, -3, -4);
+
+        // Small contact shadows separate components from the board surface.
+        d3img2.renderer.shadowMap.enabled = true;
+        d3img2.renderer.shadowMap.type = PCFSoftShadowMap;
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.set(2048, 2048);
+        Object.assign(keyLight.shadow.camera, {
+            left: -1.2, right: 1.2, top: 1.2, bottom: -1.2,
+            near: 0.1, far: 20
+        });
+        keyLight.shadow.camera.updateProjectionMatrix();
+        keyLight.shadow.bias = -0.00003;
+        keyLight.shadow.normalBias = 0.0005;
+        // Called if Model loaded and all ready
+        d3img2.ready.then(() => {
+            d3img2.model.traverse(object => {
+                if (!object.isMesh) return;
+                object.castShadow = true;
+                object.receiveShadow = true;
+            });
+            d3img2.invalidate();
+        }).catch(() => {}); // The viewer already displays model-loading errors.
+
+        const disposeViewer = d3img2.dispose;
+        d3img2.dispose = () => {
+            keyLight.dispose();
+            fillLight.dispose();
+            rimLight.dispose();
+            disposeViewer();
+        };
+
+    </script>
+    <!-- 3D Magic end (Use) -->
+</body>
+
+</html>

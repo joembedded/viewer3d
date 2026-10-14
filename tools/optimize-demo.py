@@ -1,11 +1,14 @@
-"""Build demo derivatives without modifying source assets. Requires Pillow."""
+"""Rebuild the material sample; optionally optimize a supplied panorama."""
+import argparse
 import json
 import struct
 from pathlib import Path
-from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-source = (ROOT / 'testball.glb').read_bytes()
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--panorama', type=Path, help='Optional original panorama to convert (requires Pillow)')
+args = parser.parse_args()
+source = (ROOT / 'models' / 'testball.glb').read_bytes()
 json_size = struct.unpack_from('<I', source, 12)[0]
 model = json.loads(source[20:20 + json_size])
 binary = source[28 + json_size:]
@@ -35,10 +38,12 @@ binary += b'\0' * (-len(binary) % 4)
 result = (struct.pack('<III', 0x46546C67, 2, 28 + len(encoded) + len(binary))
     + struct.pack('<II', len(encoded), 0x4E4F534A) + encoded
     + struct.pack('<II', len(binary), 0x004E4942) + binary)
-(ROOT / 'testball-optimized.glb').write_bytes(result)
+(ROOT / 'models' / 'testball-optimized.glb').write_bytes(result)
 
-with Image.open(ROOT / '2912x_southern_germany.jpg') as panorama:
-    panorama.thumbnail((2560, 1280), Image.Resampling.LANCZOS)
-    panorama.save(ROOT / 'southern-germany.webp', quality=85, method=6)
-for name in ('testball-optimized.glb', 'southern-germany.webp'):
+if args.panorama:
+    from PIL import Image
+    with Image.open(args.panorama) as panorama:
+        panorama.thumbnail((2560, 1280), Image.Resampling.LANCZOS)
+        panorama.save(ROOT / 'skyboxes' / 'southern-germany.webp', quality=85, method=6)
+for name in ('models/testball-optimized.glb', 'skyboxes/southern-germany.webp'):
     print(name, (ROOT / name).stat().st_size, 'bytes')

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<!-- Universal GLB viewer starter. (C) JoEmbedded -->
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#181e24">
+    <title>Material Preview · JoEmbedded</title>
+    <style>
+        html { color-scheme: dark; }
+        * { box-sizing: border-box; }
+        body {
+            height: 100vh; height: 100dvh; margin: 0;
+            padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+                max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+            display: flex; flex-direction: column; gap: 8px;
+            background: #181e24; color: #edf2f5; font-family: system-ui, sans-serif;
+        }
+        .page-header { display: flex; flex-wrap: wrap; align-items: center;
+            justify-content: space-between; gap: 8px 16px; padding: 2px 4px; }
+        h1 { margin: 0; font-size: 1rem; font-weight: 600; }
+        h1 span { color: #b2bec7; font-weight: 400; }
+        #mviewer { flex: 1; min-height: 140px; width: 100%; border: 1px solid #52616e;
+            border-radius: 9px; background: #202830; }
+        #mloader { max-width: calc(100% - 32px); border: 1px solid #647780;
+            border-radius: 8px; background: #202830; font-size: .875rem; text-align: center; }
+        .caption { display: flex; flex-wrap: wrap; justify-content: space-between;
+            gap: 3px 16px; padding: 0 4px; color: #b2bec7; font-size: .75rem; }
+        .caption p { margin: 0; }
+        @media (max-width: 480px) {
+            .page-header { gap: 6px; }
+            h1 { width: 100%; font-size: .9375rem; }
+            .caption { font-size: .6875rem; }
+        }
+    </style>
+    <link rel="stylesheet" href="./driver_js/jo3dview.css?v=20261011-realism">
+    <script type="importmap">
+        { "imports": {
+            "three": "./driver_js/three/build/three.module.min.js",
+            "three/addons/": "./driver_js/three/examples/jsm/"
+        } }
+    </script>
+    <link rel="stylesheet" href="./driver_js/page-layout.css?v=20261014-centered">
+</head>
+<body>
+    <nav class="page-navigation" aria-label="Seitennavigation">
+        <a class="back-link" href="./index.html" lang="de"><span aria-hidden="true">←</span> Zurück</a>
+    </nav>
+    <header class="page-header">
+        <h1>JoEmbedded <span> / 3D-Ansicht</span></h1>
+        <nav id="viewer-controls" aria-label="Ansicht steuern"></nav>
+    </header>
+    <main id="mviewer" class="jo3dviewer" aria-label="Interaktive 3D-Modellansicht">
+        <div id="mloader" class="jo3dloader" role="status">Modell wird geladen …</div>
+    </main>
+    <footer class="caption">
+        <p>Ziehen: drehen · Scrollen / zwei Finger: zoomen · Drehpause: 10 s</p>
+        <p>Somewhere in Southern Germany</p>
+    </footer>
+    <script type="module">
+        import { view3dDocumentation } from './driver_js/jo3dview.js?v=20261011-realism';
+        import { ACESFilmicToneMapping, MathUtils } from 'three';
+        const viewer = view3dDocumentation('mviewer', {
+            model: './models/testball-optimized.glb',
+            background: './skyboxes/southern-germany.webp',
+            loaderId: 'mloader', toolbarId: 'viewer-controls',
+            toneMapping: ACESFilmicToneMapping, exposure: 1.15,
+            backgroundIntensity: 0.45, environmentIntensity: 2,
+            size: 1.1, cameraPosition: [-0.5, 0.18, 0.98],
+            autoRotatePause: 10
+        });
+        viewer.ready.then(() => {
+            // Keep a slight diagonal tilt, including after resetting the view.
+            viewer.modRotTarget.z = MathUtils.degToRad(12);
+            viewer.model.rotation.z = viewer.modRotTarget.z;
+            viewer.invalidate();
+        });
+        // For a documentation SPA: call viewer.dispose() on unmount.
+    </script>
+</body>
+</html>

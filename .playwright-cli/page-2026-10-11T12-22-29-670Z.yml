@@ -1,5 +1,0 @@
-- generic [active] [ref=e1]:
-  - banner [ref=e2]:
-    - heading "JoEmbedded" [level=1] [ref=e3]
-    - paragraph [ref=e4]: "'Somewhere in Southern Germany'"
-  - main "Interactive 3D view of 'Somwhere in Southern Germany'" [ref=e5]

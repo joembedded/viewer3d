@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<!-- Universal GLB viewer starter. (C) JoEmbedded -->
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#181e24">
+    <title>Skybox Explorer · JoEmbedded</title>
+    <style>
+        html { color-scheme: dark; }
+        * { box-sizing: border-box; }
+        body {
+            height: 100vh; height: 100dvh; margin: 0;
+            padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+                max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+            display: flex; flex-direction: column; gap: 8px;
+            background: #181e24; color: #edf2f5; font-family: system-ui, sans-serif;
+        }
+        .page-header { display: flex; flex-wrap: wrap; align-items: center;
+            justify-content: space-between; gap: 8px 16px; padding: 2px 4px; }
+        h1 { margin: 0; font-size: 1rem; font-weight: 600; }
+        h1 span { color: #b2bec7; font-weight: 400; }
+        .background-picker { display: flex; align-items: center; gap: 8px; min-width: 0;
+            color: #b2bec7; font-size: .8125rem; }
+        .background-picker select { min-width: 0; max-width: 100%; min-height: 38px;
+            padding: 6px 30px 6px 10px; border: 1px solid #52616e; border-radius: 6px;
+            background: #252e36; color: #edf2f5; font: inherit; cursor: pointer; }
+        .background-picker select:focus-visible { outline: 2px solid #b7ddf4; outline-offset: 2px; }
+        #mviewer { flex: 1; min-height: 140px; width: 100%; border: 1px solid #52616e;
+            border-radius: 9px; background: #202830; }
+        #mloader { max-width: calc(100% - 32px); border: 1px solid #647780;
+            border-radius: 8px; background: #202830; font-size: .875rem; text-align: center; }
+        .caption { display: flex; flex-wrap: wrap; justify-content: space-between;
+            gap: 3px 16px; padding: 0 4px; color: #b2bec7; font-size: .75rem; }
+        .caption p { margin: 0; }
+        @media (max-width: 480px) {
+            .page-header { gap: 6px; }
+            h1 { width: 100%; font-size: .9375rem; }
+            .background-picker { width: 100%; }
+            .background-picker select { flex: 1; width: 0; }
+            .caption { font-size: .6875rem; }
+        }
+    </style>
+    <link rel="stylesheet" href="./driver_js/jo3dview.css?v=20261011-realism">
+    <script type="importmap">
+        { "imports": {
+            "three": "./driver_js/three/build/three.module.min.js",
+            "three/addons/": "./driver_js/three/examples/jsm/"
+        } }
+    </script>
+    <link rel="stylesheet" href="./driver_js/page-layout.css?v=20261014-centered">
+</head>
+<body>
+    <nav class="page-navigation" aria-label="Seitennavigation">
+        <a class="back-link" href="./index.html" lang="de"><span aria-hidden="true">←</span> Zurück</a>
+    </nav>
+    <header class="page-header">
+        <h1>JoEmbedded <span> / 3D-Ansicht</span></h1>
+        <div class="background-picker">
+            <label for="background-select">Hintergrund</label>
+            <select id="background-select" aria-describedby="background-status"></select>
+        </div>
+        <nav id="viewer-controls" aria-label="Ansicht steuern"></nav>
+    </header>
+    <main id="mviewer" class="jo3dviewer" aria-label="Interaktive 3D-Modellansicht">
+        <div id="mloader" class="jo3dloader" role="status">Modell wird geladen …</div>
+    </main>
+    <footer class="caption">
+        <p>Ziehen: drehen · Scrollen / zwei Finger: zoomen · Drehpause: 10 s</p>
+        <p id="background-status" role="status">Hintergrund wird geladen …</p>
+    </footer>
+    <script type="module">
+        import { view3dDocumentation } from './driver_js/jo3dview.js?v=20261014-vector-rotation';
+        import { ACESFilmicToneMapping, MathUtils, DirectionalLight, Object3D } from 'three';
+
+        // All large panorama images and MP4 skyboxes in the skyboxes directory.
+        const backgrounds = [
+            { file: 'industrial_skybox.mp4', label: 'Industriehalle · Video', background: 0.22, environment: 1.6 },
+            { file: 'southern-germany.webp', label: 'Süddeutschland (Standard)', background: 0.32, environment: 1.9 },
+            { file: '1024px-Ampleben_Panorama.jpg', label: 'Ampleben', background: 0.3, environment: 1.7 },
+            { file: '1024px_ki_panorama.jpg', label: 'Landschaft · KI-Panorama', background: 0.32, environment: 1.4 },
+            { file: 'ScientificLab.png', label: 'Scientific-Labor', background: 0.23, environment: 1.4 },
+            { file: 'joembeddedlab.webp', label: 'JoEmbedded-Labor', background: 0.22, environment: 1.6 },
+            { file: 'industrial_skybox.png', label: 'Industriehalle', background: 0.22, environment: 1.5 }
+        ];
+        const select = document.getElementById('background-select');
+        const status = document.getElementById('background-status');
+        for (const entry of backgrounds) select.add(new Option(entry.label, entry.file));
+        const initial = backgrounds[0];
+        function companionImage(file) {
+            const image = backgrounds.find(item => item.file.toLowerCase() ===
+                file.replace(/\.mp4$/i, '.png').toLowerCase());
+            return image ? './skyboxes/' + image.file : undefined;
+        }
+        const viewer = view3dDocumentation('mviewer', {
+            model: './models/Rundlogger.glb',
+            background: './skyboxes/' + initial.file,
+            environmentFallbackImage: companionImage(initial.file),
+            loaderId: 'mloader', toolbarId: 'viewer-controls',
+            toneMapping: ACESFilmicToneMapping, exposure: 1.08,
+            backgroundIntensity: initial.background, environmentIntensity: initial.environment,
+            size: 1, cameraPosition: [-0.12, 0.1, 0.87],
+            framingAspect: 1.6,
+            autoRotatePause: 10,
+            autoRotateSpeed: 2,
+            modelAutoRotateSpeed: [0, -1.5, 0]  
+
+        });
+
+        // Neutral studio fill keeps labels readable in darker outdoor reflections.
+        // Camera-relative lights illuminate the visible side at every orbit angle.
+        const lightTarget = new Object3D();
+        viewer.scene.add(viewer.camera, lightTarget);
+        const lights = [[1.2, -3, 4, 2], [0.4, 4, 0, 1], [0.8, 1, -3, -4]].map(([intensity, x, y, z]) => {
+            const light = new DirectionalLight(0xffffff, intensity);
+            light.position.set(x, y, z);
+            light.target = lightTarget;
+            viewer.camera.add(light);
+            return light;
+        });
+        let selection = 0;
+        viewer.backgroundReady.then(ok => {
+            if (selection === 0) status.textContent = ok ? initial.label : 'Hintergrund konnte nicht geladen werden.';
+        });
+        select.addEventListener('change', async () => {
+            const request = ++selection;
+            const entry = backgrounds.find(item => item.file === select.value);
+            status.textContent = 'Hintergrund wird geladen …';
+            viewer.setNeutralBackground(false);
+            viewer.scene.backgroundIntensity = entry.background;
+            viewer.scene.environmentIntensity = entry.environment;
+            const ok = await viewer.setBackground('./skyboxes/' + entry.file, {
+                // Prefer the first video frame; this image is only a fallback.
+                environmentFallbackImage: companionImage(entry.file)
+            });
+            if (request === selection) status.textContent = ok ? entry.label :
+                'Hintergrund konnte nicht geladen werden. Bitte eine andere Auswahl versuchen.';
+        });
+        viewer.ready.then(() => {
+            // Keep a slight diagonal tilt, including after resetting the view.
+            viewer.controls.minDistance = 0.5; 
+            viewer.modRotTarget.z = MathUtils.degToRad(12);
+            viewer.model.rotation.z = viewer.modRotTarget.z;
+            viewer.invalidate();
+        }).catch(() => {}); // Loading errors are shown by the viewer.
+        const disposeViewer = viewer.dispose;
+        viewer.dispose = () => { lights.forEach(light => light.dispose()); disposeViewer(); };
+        // For a documentation SPA: call viewer.dispose() on unmount.
+    </script>
+</body>
+</html>

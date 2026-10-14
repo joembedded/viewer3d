@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<!-- dieses kleine Tool laedt ein GLB Modell und bewegt es dynamisch, falls ein BLE Verbindung besteht -->
+<!-- (C)JoEmbedded -->
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bluetooth Sensor Orientation · JoEmbedded</title>
+    <link rel="stylesheet" href="./driver_js/demo-layout.css">
+
+    <!-- 3D Magic starts here (Init) -->
+    <link rel="stylesheet" href="./driver_js/jo3dview.css">
+    <script type="importmap">
+        {
+            "imports": {
+            "three": "./driver_js/three/build/three.module.min.js",
+            "three/addons/": "./driver_js/three/examples/jsm/"
+            }
+        }
+    </script>
+    <!-- 3D Magic end (Init) -->
+
+    <link rel="stylesheet" href="./driver_js/page-layout.css?v=20261014-centered">
+</head>
+
+<body>
+    <nav class="page-navigation" aria-label="Seitennavigation">
+        <a class="back-link" href="./index.html" lang="de"><span aria-hidden="true">←</span> Zurück</a>
+    </nav>
+    <h1>Bluetooth Sensor Orientation · JoEmbedded</h1>
+    <div id="mviewer" class="jo3dviewer sensor-view">
+        <div id="mloader" class="jo3dloader"></div>
+    </div>
+
+    <!-- Interface to BLX.js: -->
+    <div class="info"><b>OSX sensor · live orientation and Bluetooth terminal</b></div>
+    <div class="ble-panels">
+        <div class="ble-panel">
+            <button id="startButton">Connect</button>
+        </div>
+        <div class="ble-panel ble-console">
+            <h2>Bluetooth terminal</h2>
+            <div id="blxTerminal"></div>
+            <h2>Connection messages</h2>
+            <div id="blxCallbackConsole"></div>
+        </div>
+
+    </div>
+
+    <!-- 3D Magic starts here (Use) -->
+    <script type="module">
+        import { view3d } from './driver_js/jo3dview.js';
+        import * as THREE from 'three'
+
+        const backimg = './skyboxes/1024px_ki_panorama.jpg' 
+        const d3img2 = view3d('mviewer', './models/psensor.glb', 6, 'mloader', backimg, false);
+        let model;
+
+        d3img2.scene.backgroundIntensity = 0.33;
+        d3img2.renderer.toneMappingExposure = 1.5;
+        d3img2.camera.position.set(4, 1, 1);
+        d3img2.controls.autoRotateSpeed = 0.1;
+
+        const graviVectorNorm = new THREE.Vector3(0, -1, 0); // Len = 3 ist exakt G1.0
+
+        function tcalcR() { // Testberechnung Orientierungsvektor
+            if (model == undefined) return;
+            // gn im THREE-, gN im LTrack-Koordinatensystem
+            const gx = avx;
+            const gy = avy;
+            const gz = avz;
+            const zVector = new THREE.Vector3(gx, gy, gz);
+            const zTotal = zVector.length();
+            if (zTotal < 0.1) {
+                return; // g zu klein (Freifall?)
+            }
+            zVector.normalize()
+
+            const zgAngle = zVector.angleTo(graviVectorNorm)
+            const zgNormalVector = new THREE.Vector3().crossVectors(zVector, graviVectorNorm).normalize();
+            let zgNormalVectorLength = zgNormalVector.length();
+            if (zgNormalVectorLength < 0.0001) { // Sonderfall Z exakt in/gegen G-Richtung!
+                zgNormalVector.set(0, 0.0001, -0.9999)
+                zgNormalVectorLength = 1
+            }
+            const modelQuat = new THREE.Quaternion().setFromAxisAngle(zgNormalVector, zgAngle);
+            const hm = new THREE.Object3D();
+            hm.setRotationFromQuaternion(modelQuat);
+            d3img2.modRotTarget.x = hm.rotation.x;
+            d3img2.modRotTarget.y = hm.rotation.y;
+            d3img2.modRotTarget.z = hm.rotation.z;
+
+            const angleStr = (zgAngle * 180 / Math.PI).toFixed(2) + ' °'
+            console.log("Omega: ", angleStr)
+            // gui_ang.setValue(angleStr)
+        }
+        // Uebergabe von BLX gX,gY,gZ
+        let xfilter = [];
+        let yfilter = [];
+        let zfilter = [];
+        let avx = 0, // Aktuelle, letzte Averages
+            avy = 0,
+            avz = 0
+
+        function average(array) {
+            let sum = 0;
+            array.forEach((element) => {
+                sum += element;
+            });
+            return sum / array.length;
+        }
+        function boxpos(h) { // e.g. h = "0 1000 -500"; // BLX Holdeposition
+            model = d3img2.model; // Wenn geladenesModell da
+            if (h !== undefined && h != '' && model !== undefined) {
+                const v = h.split(' ').map((e) => parseInt(e) / 1000);
+                const gx = v[1],
+                    gy = v[2],
+                    gz = v[0];
+                //console.log("g:", gx, gy, gz);
+                const delta = Math.sqrt((avx - gx) * (avx - gx) + (avy - gy) * (avy - gy) + (avz - gz) * (avz - gz)) // Delta to average
+                //console.log(delta); 
+                if (delta > 0.1) { // Trigger: Empty Array
+                    xfilter = [];
+                    yfilter = [];
+                    zfilter = [];
+                    //console.log("");
+                }
+                const filterlen = 5 // Filterlen 5 ganz OK
+                xfilter.push(gx);
+                if (xfilter.length > filterlen) xfilter.shift();
+                yfilter.push(gy);
+                if (yfilter.length > filterlen) yfilter.shift();
+                zfilter.push(gz);
+                if (zfilter.length > filterlen) zfilter.shift();
+                // Die gefilterten Werte:
+                avx = average(xfilter);
+                avy = average(yfilter);
+                avz = average(zfilter);
+                tcalcR()
+            }
+        }
+
+
+        //----------------------------------------------
+
+        import './driver_js/FileSaver.js'
+        import './driver_js/blx.js'
+        import './driver_js/blStore.js'
+
+        const VERSION = 'V0.10 / 30.10.2025'
+        const COPYRIGHT = '(C)JoEmbedded.de'
+        document.querySelector('.info').innerHTML += `<br>${VERSION} - ${COPYRIGHT}`;
+
+        let connectionLevel = 0;
+        let startRawScanCalled = false;
+
+        const maxConsoleLines = 10;
+        let totalCount = 1;
+        let consoleLines = [];
+
+        // This callback receives messages from blx.js - Callback  m:Message, v:Value, xinfo:Text
+        function bleCallback(m, v, xinfo) {
+            let output = '';
+            switch (m) {
+                case 'CON':
+                    output = "CON-Level: " + v;
+                    connectionLevel = v
+                    connectionChanged();
+                    break;
+                case 'RSSI':
+                    output = `RSSI: ${v} dBm`;
+                    break;
+                case 'INFO':
+                    output = "INFO: " + xinfo;
+                    break;
+                case 'MSG':
+                    output = "MSG " + v + ": " + xinfo;
+                    break;
+                case 'WARN':
+                    output = "WARNING " + v + ": " + xinfo;
+                    break;
+                case 'ERR':
+                    output = "ERROR " + v + ": " + xinfo;
+                    break;
+                default:
+                    output = "BLX: " + m + ", " + v + ", " + xinfo;
+                    if (m == "VSENS" && xinfo == "A") {
+                        boxpos(v); // 
+                    }
+            }
+            console.log(output); // Log to console
+            consoleLines.push(`${totalCount++}: ${output}`); // Add to console display
+            if (consoleLines.length > maxConsoleLines) {
+                consoleLines.shift();
+            }
+            document.getElementById('blxCallbackConsole').innerHTML = consoleLines.join('<br>');
+        }
+
+        // Change Button Funktion according to connection level
+        function connectionChanged() {
+            const button = document.getElementById('startButton');
+            startRawScanCalled = false;
+            if (connectionLevel === 0 || connectionLevel === 1) {
+                button.textContent = 'Connect';
+            } else if (connectionLevel === 4) {
+                button.textContent = 'Start';
+            } else {
+                button.textContent = 'Busy...';
+            }
+        }
+
+        // Button will connect only, if PIN is known. Maybe manually enter via ".i <PIN>" command in terminal ONCE!
+        async function clickedButton() {
+            document.getElementById('startButton').disabled = true;
+            try {
+                if (connectionLevel === 0 || connectionLevel === 1) await blx.userSendCmd(".c");
+                else if (connectionLevel === 4) {
+                    const blxID = blx.getDevice();
+                    if (blxID.deviceType == 312) {   // OSX Piezo with Orientation Sensor
+                        if (!startRawScanCalled) {
+                            await blx.userSendCmd("pp"); // Start Scan
+                            startRawScanCalled = true;
+                            document.getElementById('startButton').textContent = 'Stop';
+                        } else {
+                            await blx.userSendCmd("p"); // Stop Scan
+                            startRawScanCalled = false;
+                            document.getElementById('startButton').textContent = 'Start';
+                        }
+                    } else {
+                        blx.terminalPrint("*** Wrong Sensor Type for Orientation Data ***");
+                    }
+                }
+            } catch (error) {
+                blx.terminalPrint("*** Error: " + error);
+            }
+            document.getElementById('startButton').disabled = false;
+        }
+
+
+
+        // *** Setup ***
+        blx.setTerminal('blxTerminal', bleCallback)
+        const terminalInput = blx.terminalGetInput()
+
+        document.getElementById('startButton').addEventListener('click', clickedButton);
+
+    </script>
+    <!-- 3D Magic end (Use) -->
+</body>
+
+</html>

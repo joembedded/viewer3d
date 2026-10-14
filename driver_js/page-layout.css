@@ -1,0 +1,21 @@
+/* Shared page frame. Percentages use the available width, excluding scrollbars. */
+body {
+    box-sizing: border-box;
+    width: 90%;
+    margin-inline: auto;
+    padding-inline: 0;
+}
+.page-navigation {
+    flex: 0 0 auto;
+    margin-bottom: .5rem;
+    font-size: .875rem;
+}
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    min-height: 32px;
+    color: #b7ddf4;
+    text-underline-offset: .2em;
+}
+.back-link:focus-visible { outline: 2px solid #b7ddf4; outline-offset: 3px; }

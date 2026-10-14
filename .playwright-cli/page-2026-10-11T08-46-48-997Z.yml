@@ -1,3 +1,0 @@
-- generic [active] [ref=e1]:
-  - heading "JoEmbedded-Labs" [level=2] [ref=e2]
-  - generic [ref=e3]: "JPIoT Hardware V0.2.1:"
