@@ -1,8 +1,10 @@
 # JoEmbedded 3D Viewer
 
 A browser-based GLTF/GLB viewer for circuit boards, sensors and product models.
-The demos use local Three.js modules, mouse/touch orbit controls and optional
-image or MP4 skyboxes. No build step or CDN is required.
+The demos use **Three.js**, mouse/touch orbit controls and optional
+image or Video-MP4 skyboxes. No build step is required. "Just works":
+
+![Preview](teaser.png)
 
 ## Demos
 

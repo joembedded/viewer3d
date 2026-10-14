@@ -93,14 +93,17 @@
         // The PNG supplies reflections and diffuse fill. Its visible background
         // is controlled separately, so dimming the room never dims the PCB.
         const d3img2 = view3d('mviewer', './models/view3d_opt.glb', 1.1, 'mloader',
-            './skyboxes/industrial_skybox.png', true, {
+            './skyboxes/industrial_skybox.png', 
+            // './skyboxes/joembeddedlab.webp', 
+            true, {
                 toneMapping: ACESFilmicToneMapping,
                 exposure: 1.1,
                 environmentIntensity: 1.15,
                 backgroundIntensity: 0.12,
                 backgroundBlurriness: 0.025,
                 autoRotate: !matchMedia('(prefers-reduced-motion: reduce)').matches,
-                autoRotateSpeed: -0.5
+                autoRotateSpeed: -0.5,
+                // modelAutoRotateSpeed: [1, -1.5, 0]
             });
         d3img2.camera.position.set(-1, 2, 2);
         d3img2.controls.update();
