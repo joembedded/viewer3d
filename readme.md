@@ -124,9 +124,108 @@ units as `autoRotateSpeed`: `1` is one full turn per 60 seconds; negative values
 reverse direction. The extra rotation follows the same interaction pauses,
 rotation toggle and visibility handling. The Scientific logger uses
 `autoRotateSpeed: -0.35` and `modelAutoRotateSpeed: [-0.175, 0, 0]` (half speed
-around X). The Skybox Explorer uses `[2, 0.5, 0.35]` for rotation on all three
-axes. Each zero component disables its axis. Older scalar values remain
+around X). The Skybox Explorer uses `[0, -1.5, 0]` for rotation around Y.
+Each zero component disables its axis. Older scalar values remain
 supported as an X-only speed.
+
+## Flight Recorder
+
+Every viewer has a **Flight Recorder** button that opens a small non-modal
+editor. Each viewer owns its own point list. Opening the editor switches off
+auto-rotation; the canvas remains available for setting up the next shot.
+
+The adjacent **Presentation** button loads `flight-points-jpiot.jsonl` without a
+prompt, waits for the model and flies to the first point. It closes the editor
+on success; the Info box and navigation appear after arrival. The button stays
+available when the Flight Recorder launcher is hidden. Override the default file
+with `data-presentation-file="my-tour.jsonl"` on the viewer container or the
+`presentationFile` viewer option. A failed/empty file shows an error in the editor
+and retains the existing points. Reset, Auto or disposal cancel a pending load.
+
+- **View loggen** asks for a short name, records the current view and adds a
+  destination button. Each point has an editable **Info** field initially set
+  to `Name-YourCommentsHere`. Canceling or entering a blank name adds nothing.
+  **V** on the focused canvas records a point too. Each recording is also logged
+  as JSON in the browser console.
+- **Edit** beside each point opens a prompt with its existing Info text. Use
+  `\n` for a line break. Cancel keeps the old text; an empty value clears it.
+  Each row also displays the recorded zoom factor and camera-to-target distance.
+- Click a point's button to fly smoothly to it. Camera position, look target,
+  orientation, FOV, zoom and the recorded model transform transition together.
+  Camera-relative interpolation produces an orbit around the target. The final
+  view stays still for presenting. Mouse/touch interaction cancels a flight;
+  choosing another point starts from the current position. Normal rotation can
+  be enabled again using **Auto**, the existing rotation control or `viewer.setAutoRotate(true)`.
+- After arrival, the Info text fades into a readable box at the top left of the
+  viewer. Both literal `\n` escapes and real line breaks are displayed as new lines.
+  Its four navigation buttons are **⏮ START** (first list point), **‹** (previous),
+  **›** (next) and **⏹ END** (close the box, fly back to the app's initial view,
+  then restart auto-rotation).
+  Previous/next are disabled at the list boundaries. The box hides during a flight
+  or manual interaction, and reappears after the next arrival.
+- **Auto** ends the current flight or stationary presentation view, flies back to
+  the app's initial camera position, target, zoom and model pose, and only then
+  restarts auto-rotation. This is the app's starting view, not the first point in
+  the loaded file or the view before pressing Presentation. Scripts can call
+  `viewer.flightRecorder.startAutoRotation()`. Manual interaction, Reset or a new
+  flight cancels the return without starting auto-rotation later.
+  Long point lists scroll vertically inside their frame; the toolbar stays visible.
+- **Reset** clears the list immediately and cancels an active flight or import.
+- **Export** downloads UTF-8 JSONL: one named point per line, including Info.
+  Copy the download into the project directory yourself.
+- **Laden** prompts for a project filename (including `.jsonl`, or a relative
+  path), initially suggesting the same file as **Presentation**, then the last
+  successfully loaded filename. It loads using `fetch()`, relative to the HTML page. A valid file
+  replaces the list. Errors are shown in the editor and retain the existing list.
+  An empty file loads an empty list. Lists are held in memory; export before
+  reloading or leaving the page.
+
+The button is visible by default. Every demo marks its viewer container with
+`data-flight-recorder="visible"`; change it to `hidden` in the HTML to hide it:
+
+```html
+<div id="mviewer" class="jo3dviewer" data-flight-recorder="hidden"></div>
+```
+
+Alternatively pass `flightRecorder: false` in the viewer options, or set
+`viewer.flightRecorder.button.hidden = true`. Hiding the button only hides the
+launcher; programmatic access and the canvas shortcut remain available.
+
+`TRANSTIME` in `driver_js/flight-recorder.js` defaults to **2.0 seconds per scene
+unit** (twice the original flight speed). Override it per viewer with `transTime: 2.0` in the options. Duration is
+`d = max(cameraDistance, targetDistance, 0.25)` and
+`duration = transTime * (d <= 1 ? d : sqrt(d))`, with smooth acceleration
+and deceleration. Short flights keep their original timing; at the default setting,
+a distance of 4 takes 4 seconds instead of 8. The minimum gives zoom/orientation-only changes a half-second
+transition at the default setting. Flights pause while the viewer/tab is hidden.
+
+Each JSONL record has `version: 1`, `name`, `info` and the snapshot fields:
+`viewerId`, `camera`, `viewport`, `model`. Camera data includes position, target,
+up vector, quaternion (`[x, y, z, w]`), vertical FOV (degrees), zoom, distance, near/far and
+aspect. Model data includes position, quaternion and scale. Vectors use
+`[x, y, z]` in scene units. The recorded viewport dimensions and aspect are
+metadata; playback uses the current browser dimensions. Use points with the
+same model and initial scale, and wait for the intro animation before recording.
+Mouse wheel/OrbitControls zoom changes the camera distance, usually leaving `zoom`
+at 1. Both values are restored during playback. Old files without `distance`
+remain supported: it is derived from position and target. Editing `distance` in
+JSONL changes the camera distance along the stored viewing direction.
+
+Both viewer constructors expose the same API:
+
+```js
+const snapshot = viewer.getViewport(); // fresh plain-value snapshot
+viewer.logViewport();                 // console-only snapshot, without a prompt
+viewer.flightRecorder.record();       // prompt for a named point
+const points = viewer.flightRecorder.points; // independent copy of the current list
+viewer.flightRecorder.flyTo(points[0]);       // returns duration in seconds
+viewer.flightRecorder.flyTo(0);               // first point by list index, with navigation
+viewer.flightRecorder.stop();                // cancel the current flight
+viewer.flightRecorder.startAutoRotation();   // fly to initial view, then resume rotation
+await viewer.flightRecorder.startPresentation(); // load default file and start first flight
+// await viewer.flightRecorder.startPresentation('my-tour.jsonl'); // optional filename
+viewer.flightRecorder.reset();               // clear the list
+```
 
 ## Skyboxes and background selection
 
@@ -221,12 +320,21 @@ playwright-cli -s=viewer open http://localhost/viewer3d/index.html --headed
 playwright-cli -s=viewer run-code --filename=tools/check-pages.js
 playwright-cli -s=viewer run-code --filename=tools/check-backgrounds.js
 playwright-cli -s=viewer run-code --filename=tools/check-model-rotation.js
+playwright-cli -s=viewer run-code --filename=tools/check-flight-recorder.js
+playwright-cli -s=viewer run-code --filename=tools/check-flight-presentation.js
+playwright-cli -s=viewer run-code --filename=tools/check-presentation-start.js
 ```
 
 The checks load every page at desktop and mobile widths, verify the 5% demo
 padding, test all skyboxes and cover video loops, fallback reflections, rapid
 background changes and cleanup. The model-rotation check verifies half speed,
 pause/resume, visibility, reduced motion and the disabled default.
+The Flight Recorder check covers recording, editing Info, JSONL download/import,
+smooth flight and interruption, invalid files, mobile layout and viewer isolation.
+The presentation check also exercises mouse wheel and optical zoom after import,
+the Edit prompt, multiline Info, navigation and ending a presentation.
+The presentation-start check loads the JPIoT tour and verifies the first point,
+short/long timing, file overrides, model readiness, cancellation and load errors.
 Screenshots go to the ignored `output/` folder.
 
 ## Dependencies and license

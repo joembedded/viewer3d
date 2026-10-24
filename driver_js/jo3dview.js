@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { createFlightRecorder } from './flight-recorder.js';
 
 // The optional seventh argument enables documentation presets without changing legacy demos.
 export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined, backimg = undefined, shift2org = true, options = {}) {
@@ -114,6 +115,7 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
     function resizeViewer() {
         const width = Math.max(1, data3d.container.clientWidth);
         const height = Math.max(1, data3d.container.clientHeight);
+        data3d.container.classList.toggle('jo3dviewer-compact', width < 520);
         // Cap GPU work on high-density phones; CSS fills the exact inner border.
         const pixelBudget = options.maxPixels ?? Infinity;
         data3d.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,
@@ -121,7 +123,7 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
         data3d.renderer.setSize(width, height, false);
         data3d.camera.aspect = width / height;
         // Allow extra horizontal room in portrait for the rotating PCB's diagonal.
-        data3d.camera.fov = Math.min(110, THREE.MathUtils.radToDeg(2 * Math.atan(
+        if (!data3d.flightRecorder?.isPresenting) data3d.camera.fov = Math.min(110, THREE.MathUtils.radToDeg(2 * Math.atan(
             Math.tan(THREE.MathUtils.degToRad(options.fov ?? 30) / 2) /
             Math.min(1, width / height / (options.framingAspect ?? 1.35))
         )));
@@ -195,10 +197,59 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
     data3d.controls.autoRotate = options.autoRotate ?? true;
     data3d.controls.autoRotateSpeed = options.autoRotateSpeed ?? 0.1;
     data3d.controls.addEventListener('change', data3d.invalidate);
+    // Plain-value snapshots also serve as waypoints for camera flights.
+    // Log a string so DevTools cannot show a subsequently mutated live object.
+    data3d.getViewport = () => ({
+        version: 1,
+        viewerId: containerId,
+        camera: {
+            position: data3d.camera.position.toArray(),
+            target: data3d.controls.target.toArray(),
+            up: data3d.camera.up.toArray(),
+            quaternion: data3d.camera.quaternion.toArray(),
+            fov: data3d.camera.fov,
+            zoom: data3d.camera.zoom,
+            distance: data3d.camera.position.distanceTo(data3d.controls.target),
+            near: data3d.camera.near,
+            far: data3d.camera.far,
+            aspect: data3d.camera.aspect
+        },
+        viewport: {
+            width: data3d.container.clientWidth,
+            height: data3d.container.clientHeight,
+            pixelRatio: data3d.renderer.getPixelRatio()
+        },
+        model: data3d.model ? {
+            position: data3d.model.position.toArray(),
+            quaternion: data3d.model.quaternion.toArray(),
+            scale: data3d.model.scale.toArray()
+        } : null
+    });
+    data3d.logViewport = () => {
+        const snapshot = data3d.getViewport();
+        console.log(JSON.stringify(snapshot, null, 2));
+        return snapshot;
+    };
+    const canvas = data3d.renderer.domElement;
+    canvas.tabIndex = 0;
+    canvas.setAttribute('aria-label', '3D-Modell. Mit Maus oder Touch drehen und zoomen. Taste V: Flugpunkt aufnehmen.');
+    canvas.setAttribute('aria-keyshortcuts', 'V');
+    const focusCanvas = () => canvas.focus({ preventScroll: true });
+    const logViewportOnKey = event => {
+        // Scope the shortcut to this viewer; leave input fields and browser shortcuts alone.
+        if (event.target !== canvas ||
+            event.repeat || event.ctrlKey || event.altKey || event.metaKey || event.isComposing ||
+            event.key.toLowerCase() !== 'v') return;
+        event.preventDefault();
+        data3d.flightRecorder.record();
+    };
+    canvas.addEventListener('pointerdown', focusCanvas);
+    data3d.container.addEventListener('keydown', logViewportOnKey);
     let interacting = false;
     let resumeRotationAt = null;
     data3d.rotationPaused = false;
     data3d.setAutoRotate = (enabled) => {
+        data3d.flightRecorder?.stop();
         resumeRotationAt = null;
         data3d.rotationPaused = false;
         data3d.controls.autoRotate = Boolean(enabled);
@@ -211,6 +262,7 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
         resumeRotationAt = performance.now() + (options.autoRotatePause ?? 10) * 1000;
     };
     data3d.controls.addEventListener('start', () => {
+        data3d.flightRecorder.stop();
         interacting = true;
         if (data3d.controls.autoRotate || data3d.rotationPaused) {
             data3d.rotationPaused = true;
@@ -222,6 +274,7 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
         interacting = false;
         if (data3d.rotationPaused) resumeRotationAt = performance.now() + (options.autoRotatePause ?? 10) * 1000;
     });
+    data3d.flightRecorder = createFlightRecorder(data3d, options);
     // Pause GPU work for documentation viewers outside the viewport or hidden tabs.
     const visibilityObserver = new IntersectionObserver(([entry]) => {
         visible = entry.isIntersecting;
@@ -240,12 +293,13 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
         previousTime = time;
         if (disposed || document.hidden || !visible) return;
         if (videoSkybox?.update()) dirty = true;
+        const presenting = data3d.flightRecorder.update(dt);
         if (!interacting && resumeRotationAt !== null && time >= resumeRotationAt) {
             data3d.controls.autoRotate = true;
             data3d.rotationPaused = false;
             resumeRotationAt = null;
         }
-        if (data3d.modelscale !== undefined) {
+        if (!presenting && data3d.modelscale !== undefined) {
             if (modelAutoRotateEnabled && data3d.controls.autoRotate &&
                 data3d.controls.enabled && !interacting) {
                 // Move target and current angle together so pausing stops the
@@ -269,7 +323,7 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
             data3d.model.rotation.y += (1 - Math.pow(0.88, dt * 60)) * (data3d.modRotTarget.y - data3d.model.rotation.y);
             data3d.model.rotation.z += (1 - Math.pow(0.9, dt * 60)) * (data3d.modRotTarget.z - data3d.model.rotation.z);
         }
-        data3d.controls.update(dt);
+        if (!presenting) data3d.controls.update(dt);
         if (dirty || !options.renderOnDemand) {
             if (videoSkybox) videoSkybox.render();
             else data3d.renderer.render(data3d.scene, data3d.camera);
@@ -297,6 +351,9 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
         visibilityObserver.disconnect();
         window.removeEventListener('resize', resizeViewer);
         document.removeEventListener('visibilitychange', visibilityChanged);
+        canvas.removeEventListener('pointerdown', focusCanvas);
+        data3d.container.removeEventListener('keydown', logViewportOnKey);
+        data3d.flightRecorder.dispose();
         videoSkybox?.dispose();
         data3d.controls.dispose();
         if (data3d.model) releaseModel(data3d.model);
@@ -539,10 +596,6 @@ export function view3dDocumentation(containerId, {
     viewer.controls.maxDistance = size * 5.5;
     viewer.controls.update();
     viewer.controls.saveState();
-    const canvas = viewer.renderer.domElement;
-    canvas.tabIndex = 0;
-    canvas.setAttribute('aria-label', '3D-Modell. Mit Maus oder Touch drehen und zoomen.');
-
     const toolbar = toolbarId ? document.getElementById(toolbarId) : null;
     const buttons = [];
     function button(label, action) {
@@ -574,7 +627,7 @@ export function view3dDocumentation(containerId, {
         viewer.pauseAutoRotate();
         viewer.invalidate();
     };
-    viewer.resetView = () => { viewer.pauseAutoRotate(); viewer.controls.reset(); viewer.invalidate(); };
+    viewer.resetView = () => { viewer.flightRecorder.stop(); viewer.pauseAutoRotate(); viewer.controls.reset(); viewer.invalidate(); };
     if (toolbar) {
         toolbar.classList.add('jo3dtoolbar');
         rotationButton = button('Drehung an', () => viewer.setAutoRotate(!rotationEnabled));

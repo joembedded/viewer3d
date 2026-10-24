@@ -24,6 +24,62 @@
 }
 
 .jo3dtoolbar { display: flex; flex-wrap: wrap; gap: 6px; }
+.jo3dlaunchers {
+    position: absolute; top: 8px; right: 8px; z-index: 11;
+    display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: calc(100% - 16px);
+}
+.jo3dviewport-button, .jo3dpresentation-button {
+    min-height: 36px; padding: 6px 10px; border: 1px solid #52616e;
+    border-radius: 6px; background: #252e36; color: #edf2f5;
+    font: inherit; font-size: .8125rem; cursor: pointer;
+}
+.jo3dviewport-button:hover, .jo3dpresentation-button:hover { background: #34424e; }
+.jo3dviewport-button:focus-visible, .jo3dpresentation-button:focus-visible { outline: 2px solid #b7ddf4; outline-offset: -3px; }
+.jo3dviewport-button[hidden], .jo3dviewer[data-flight-recorder="hidden"] .jo3dviewport-button { display: none; }
+.jo3dflight {
+    box-sizing: border-box; position: fixed; inset: auto 16px 16px auto;
+    margin: 0; width: min(420px, calc(100vw - 32px)); max-height: min(560px, 80dvh);
+    padding: 14px; border: 1px solid #647780; border-radius: 12px;
+    background: #181e24; color: #edf2f5; box-shadow: 0 12px 40px #0008;
+    font: 14px/1.4 system-ui, sans-serif; z-index: 100; color-scheme: dark;
+}
+.jo3dflight[open] { display: flex; flex-direction: column; gap: 12px; }
+.jo3dflight-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.jo3dflight-heading strong { overflow-wrap: anywhere; }
+.jo3dflight-heading button, .jo3dflight-go, .jo3dflight-edit {
+    border: 1px solid #52616e; border-radius: 6px; color: inherit;
+    background: #252e36; font: inherit; min-height: 36px; padding: 6px 10px; cursor: pointer;
+}
+.jo3dflight-heading button { flex-shrink: 0; font-size: 20px; }
+.jo3dflight-heading, .jo3dflight-toolbar, .jo3dflight-status { flex-shrink: 0; }
+.jo3dflight-list {
+    display: flex; flex-direction: column; gap: 8px; flex: 0 1 auto;
+    margin: 0; padding: 10px; min-width: 0; min-height: 0; overflow: hidden;
+    border: 1px solid #52616e; border-radius: 8px;
+}
+.jo3dflight-list-title { flex-shrink: 0; color: #b7ddf4; }
+.jo3dflight-points {
+    min-height: 0; overflow-y: auto; overflow-x: hidden;
+    scrollbar-gutter: stable; overscroll-behavior-y: contain;
+    scrollbar-color: #647780 #202830;
+}
+.jo3dflight-points::-webkit-scrollbar { width: 10px; }
+.jo3dflight-points::-webkit-scrollbar-track { background: #202830; border-radius: 5px; }
+.jo3dflight-points::-webkit-scrollbar-thumb { background: #647780; border-radius: 5px; }
+.jo3dflight-point { display: grid; gap: 6px; }
+.jo3dflight-point-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+.jo3dflight-edit { font-size: .8125rem; }
+.jo3dflight-zoom { color: #b6c6d1; font-size: 12px; }
+.jo3dflight-point + .jo3dflight-point { margin-top: 12px; padding-top: 12px; border-top: 1px solid #34424e; }
+.jo3dflight-go { width: 100%; text-align: left; overflow-wrap: anywhere; }
+.jo3dflight-point label { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; font-size: 12px; }
+.jo3dflight-point input {
+    box-sizing: border-box; width: 100%; min-width: 0; padding: 7px; border: 1px solid #52616e;
+    border-radius: 5px; background: #202830; color: #edf2f5; font: inherit;
+}
+.jo3dflight-status, .jo3dflight-empty { margin: 0; color: #b6c6d1; font-size: 12px; overflow-wrap: anywhere; }
+.jo3dflight button:hover { background: #34424e; }
+.jo3dflight button:focus-visible, .jo3dflight input:focus-visible { outline: 2px solid #b7ddf4; outline-offset: 1px; }
 .jo3dtoolbar button {
     min-height: 36px; padding: 6px 12px; border: 1px solid #52616e;
     border-radius: 6px; background: #252e36; color: #edf2f5;
@@ -33,6 +89,32 @@
 .jo3dtoolbar button[aria-pressed="true"] { background: #344754; border-color: #8babbf; }
 .jo3dtoolbar button:focus-visible, .jo3dviewer canvas:focus-visible {
     outline: 2px solid #b7ddf4; outline-offset: -3px;
+}
+.jo3dflight-info {
+    box-sizing: border-box; position: absolute; top: 12px; left: 12px; z-index: 12;
+    width: min(360px, calc(100% - 24px)); max-height: min(65%, 380px);
+    display: flex; flex-direction: column; gap: 12px; padding: 14px;
+    border: 1px solid #8ba2b4; border-radius: 10px; background: #18222ef2;
+    color: #f4f8ff; box-shadow: 0 4px 20px #0005; font: 18px/1.5 system-ui, sans-serif;
+    opacity: 0; visibility: hidden; transform: translateY(-8px); pointer-events: none;
+    transition: opacity .28s ease, transform .28s ease, visibility 0s linear .28s;
+}
+.jo3dflight-info.is-visible {
+    opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto;
+    transition: opacity .28s ease, transform .28s ease, visibility 0s;
+}
+.jo3dviewer-compact .jo3dflight-info { top: 56px; max-height: min(65%, 380px, calc(100% - 68px)); }
+.jo3dflight-info-text { margin: 0; min-height: 0; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.jo3dflight-navigation { flex-shrink: 0; }
+.jo3dflight-navigation button {
+    min-width: 46px; min-height: 44px; padding: 6px 10px;
+    font-size: 28px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.jo3dflight-navigation button:disabled { opacity: .4; cursor: default; }
+.jo3dflight-navigation button:disabled:hover { background: #252e36; }
+@media (prefers-reduced-motion: reduce) {
+    .jo3dflight-info, .jo3dflight-info.is-visible { transition: none; transform: none; }
 }
 @media (max-width: 480px) {
     .jo3dtoolbar button { min-height: 40px; padding: 6px 10px; }

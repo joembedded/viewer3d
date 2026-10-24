@@ -74,8 +74,10 @@ async (page) => {
     }), 'Default viewer gained model rotation');
     await page.route('**/skybox-explorer.html', async route => {
         const response = await route.fetch();
+        // Exercise all axes with a fixed fixture, independent of the demo's chosen speeds.
         await route.fulfill({ response, body: (await response.text()).replace(
-            'const viewer = view3dDocumentation(', 'const viewer = window.__viewer = view3dDocumentation(') });
+            'const viewer = view3dDocumentation(', 'const viewer = window.__viewer = view3dDocumentation('
+        ).replace(/modelAutoRotateSpeed:\s*\[[^\]]*\]/, 'modelAutoRotateSpeed: [2, 0.5, 0.35]') });
     });
     await page.goto('http://localhost/viewer3d/skybox-explorer.html');
     const vector = await page.evaluate(async () => {
