@@ -274,7 +274,7 @@ export function view3d(containerId, modelFname, tscale = 1, loaderId = undefined
         interacting = false;
         if (data3d.rotationPaused) resumeRotationAt = performance.now() + (options.autoRotatePause ?? 10) * 1000;
     });
-    data3d.flightRecorder = createFlightRecorder(data3d, options);
+    data3d.flightRecorder = createFlightRecorder(data3d, options, modelFname);
     // Pause GPU work for documentation viewers outside the viewport or hidden tabs.
     const visibilityObserver = new IntersectionObserver(([entry]) => {
         visible = entry.isIntersecting;
@@ -591,7 +591,8 @@ export function view3dDocumentation(containerId, {
         ...options
     });
     viewer.camera.position.fromArray(cameraPosition);
-    viewer.controls.enablePan = false;
+    viewer.controls.enablePan = true; // Use this to rotaten and pan the camera.
+    // viewer.controls.enablePan = false; // Use this to rotate only, without panning.
     viewer.controls.minDistance = size * 0.5;
     viewer.controls.maxDistance = size * 5.5;
     viewer.controls.update();

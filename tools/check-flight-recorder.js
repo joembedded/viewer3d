@@ -13,7 +13,7 @@ async (page) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(base + 'scientific-logger.html');
     await page.evaluate(() => window.__viewer.ready.then(() => undefined));
-    const launcher = page.getByRole('button', { name: 'Flight Recorder', exact: true });
+    const launcher = page.getByRole('button', { name: 'Record', exact: true });
     await launcher.click();
     const panel = page.getByRole('dialog');
     assert(await panel.isVisible(), 'editor opens');
@@ -80,7 +80,7 @@ async (page) => {
     const downloadPromise = page.waitForEvent('download');
     await panel.getByRole('button', { name: 'Export', exact: true }).click();
     const download = await downloadPromise;
-    assert(download.suggestedFilename() === 'flight-points-mviewer.jsonl', 'JSONL download filename');
+    assert(download.suggestedFilename() === 'Rundlogger.jsonl', 'JSONL download uses model filename');
     await download.saveAs('output/playwright/flight-roundtrip.jsonl');
     const exported = await page.evaluate(async () => (await fetch('output/playwright/flight-roundtrip.jsonl')).text());
     const lines = exported.trim().split('\n');

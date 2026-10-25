@@ -12,7 +12,7 @@ async (page) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('http://localhost/viewer3d/scientific-logger.html');
     await page.evaluate(() => window.__viewer.ready.then(() => undefined));
-    await page.getByRole('button', { name: 'Flight Recorder', exact: true }).click();
+    await page.getByRole('button', { name: 'Record', exact: true }).click();
     const panel = page.getByRole('dialog');
     const box = page.locator('.jo3dflight-info');
     const prompt = async (action, reply) => {
@@ -88,7 +88,7 @@ async (page) => {
 
     // Download and re-load the actual recorded wheel and projection zoom values.
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.getByRole('button', { name: 'Flight Recorder', exact: true }).click();
+    await page.getByRole('button', { name: 'Record', exact: true }).click();
     const downloadPromise = page.waitForEvent('download');
     await panel.getByRole('button', { name: 'Export', exact: true }).click();
     await (await downloadPromise).saveAs('output/playwright/presentation-roundtrip.jsonl');

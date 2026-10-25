@@ -62,7 +62,7 @@ export function parseFlightPoints(text) {
     return points;
 }
 
-export function createFlightRecorder(viewer, options = {}) {
+export function createFlightRecorder(viewer, options = {}, modelFile = '') {
     let points = [], flight = null, presenting = false, disposed = false;
     let activeIndex = -1, activePoint = null;
     let initialView, returnRequest = 0;
@@ -103,7 +103,8 @@ export function createFlightRecorder(viewer, options = {}) {
         parent.append(node);
         return node;
     };
-    const launcher = element('button', 'jo3dviewport-button', 'Flight Recorder');
+    const launcher = element('button', 'jo3dviewport-button', 'Record');
+    launcher.title = 'Flight Recorder öffnen (Entwicklerwerkzeug)';
     launcher.id = `${viewer.container.id}-flight-recorder-button`;
     launcher.type = 'button';
     launcher.hidden = options.flightRecorder === false;
@@ -112,6 +113,7 @@ export function createFlightRecorder(viewer, options = {}) {
     const launchers = element('div', 'jo3dlaunchers');
     const presentationButton = button('Presentation', () => startPresentation(), launchers);
     presentationButton.className = 'jo3dpresentation-button';
+    presentationButton.hidden = true;
     launchers.append(launcher);
     viewer.container.append(launchers);
 
@@ -139,11 +141,39 @@ export function createFlightRecorder(viewer, options = {}) {
     panel.append(heading, toolbar, list, status);
     document.body.append(panel);
     let fileName;
-    const presentationFile = () => options.presentationFile ?? viewer.container.dataset.presentationFile ?? 'flight-points-jpiot.jsonl';
+    // Preserve relative directories and URL query/hash while replacing the model extension.
+    const modelPresentationFile = modelFile.replace(/\.[^./?#]+(?=[?#]|$)/, '.jsonl');
+    const presentationFile = () => options.presentationFile ?? viewer.container.dataset.presentationFile ?? modelPresentationFile;
+    async function checkPresentationFile() {
+        const name = presentationFile();
+        if (!name) return;
+        try {
+            const response = await fetch(name, { method: 'HEAD', cache: 'no-store', signal: events.signal });
+            if (!disposed) presentationButton.hidden = !response.ok;
+        } catch {
+            // A missing or unreachable companion file simply has no launcher.
+            if (!disposed) presentationButton.hidden = true;
+        }
+    }
+    checkPresentationFile();
 
     const infoBox = element('section', 'jo3dflight-info');
     infoBox.setAttribute('aria-label', 'Flugpunkt-Info');
+    let collapseTimer;
+    let collapseAnimation, toggleAnimation;
+    const reducedInfoMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const compactInfo = window.matchMedia('(max-width: 1024px), (max-height: 600px)');
+    const infoHeading = element('header', 'jo3dflight-info-heading');
+    const infoTitle = element('strong', 'jo3dflight-info-title');
+    const infoToggle = button('⌃', () => {
+        clearTimeout(collapseTimer);
+        setInfoCollapsed(!infoBox.classList.contains('is-collapsed'));
+    }, infoHeading);
+    infoToggle.className = 'jo3dflight-info-toggle';
+    infoHeading.prepend(infoTitle);
     const infoText = element('p', 'jo3dflight-info-text');
+    infoText.id = `${panel.id}-info-text`;
+    infoToggle.setAttribute('aria-controls', infoText.id);
     infoText.setAttribute('aria-live', 'polite');
     const navigation = element('nav', 'jo3dtoolbar jo3dflight-navigation');
     navigation.setAttribute('aria-label', 'Präsentation steuern');
@@ -160,11 +190,48 @@ export function createFlightRecorder(viewer, options = {}) {
     navigationButton('⏹\uFE0E', 'END – Präsentation beenden', startAutoRotation);
 
 
-    infoBox.append(infoText, navigation);
+    infoBox.append(infoHeading, infoText, navigation);
     viewer.container.append(infoBox);
     hideInfo();
 
+    function setInfoCollapsed(collapsed) {
+        const changed = infoBox.classList.contains('is-collapsed') !== collapsed;
+        const animate = changed && infoBox.classList.contains('is-visible') && !reducedInfoMotion.matches;
+        const before = animate ? infoBox.getBoundingClientRect() : null;
+        collapseAnimation?.cancel();
+        toggleAnimation?.cancel();
+        infoBox.classList.toggle('is-collapsed', collapsed);
+        infoText.hidden = collapsed;
+        infoToggle.textContent = collapsed ? '\u25BC\uFE0E' : '\u25B2\uFE0E';
+        infoToggle.setAttribute('aria-expanded', String(!collapsed));
+        infoToggle.title = collapsed ? 'Info aufklappen' : 'Info zuklappen';
+        infoToggle.setAttribute('aria-label', infoToggle.title);
+        if (animate) {
+            const after = infoBox.getBoundingClientRect();
+            collapseAnimation = infoBox.animate([
+                { width: `${before.width}px`, height: `${before.height}px`, overflow: 'hidden' },
+                { width: `${after.width}px`, height: `${after.height}px`, overflow: 'hidden' }
+            ], { duration: 320, easing: 'ease-in-out' });
+            toggleAnimation = infoToggle.animate([
+                { opacity: .35, transform: 'scale(.85)' },
+                { opacity: 1, transform: 'scale(1)' }
+            ], { duration: 320, easing: 'ease-out' });
+        }
+    }
+    function scheduleInfoCollapse() {
+        clearTimeout(collapseTimer);
+        if (compactInfo.matches && infoBox.classList.contains('is-visible')) {
+            collapseTimer = setTimeout(() => setInfoCollapsed(true), 2000);
+        }
+    }
+    on(compactInfo, 'change', () => {
+        setInfoCollapsed(false);
+        scheduleInfoCollapse();
+    });
     function hideInfo() {
+        clearTimeout(collapseTimer);
+        collapseAnimation?.cancel();
+        toggleAnimation?.cancel();
         if (infoBox.contains(document.activeElement)) viewer.renderer.domElement.focus({ preventScroll: true });
         infoBox.classList.remove('is-visible');
         infoBox.inert = true;
@@ -172,6 +239,7 @@ export function createFlightRecorder(viewer, options = {}) {
     }
     function refreshInfo() {
         if (!activePoint) return;
+        infoTitle.textContent = activePoint.name;
         // Display literal escape sequences and real line breaks, never interpret HTML.
         infoText.textContent = activePoint.info.replace(/\\n/g, '\n');
         startButton.disabled = points.length === 0;
@@ -185,6 +253,8 @@ export function createFlightRecorder(viewer, options = {}) {
         infoBox.inert = false;
         infoBox.setAttribute('aria-hidden', 'false');
         infoBox.classList.add('is-visible');
+        setInfoCollapsed(false);
+        scheduleInfoCollapse();
     }
     const editableInfo = info => info.replace(/\r?\n/g, '\\n');
 
@@ -317,11 +387,11 @@ export function createFlightRecorder(viewer, options = {}) {
         const url = URL.createObjectURL(new Blob([jsonl], { type: 'application/x-ndjson;charset=utf-8' }));
         const link = document.createElement('a');
         link.href = url;
-        link.download = (fileName ?? `flight-points-${viewer.container.id}.jsonl`).split(/[\\/]/).pop().split(/[?#]/)[0] || 'flight-points.jsonl';
+        link.download = (fileName ?? presentationFile()).split(/[\\/]/).pop().split(/[?#]/)[0] || 'flight-points.jsonl';
         if (!link.download.toLowerCase().endsWith('.jsonl')) link.download += '.jsonl';
         link.hidden = true; document.body.append(link); link.click(); link.remove();
         downloads.set(url, setTimeout(() => { URL.revokeObjectURL(url); downloads.delete(url); }, 1000));
-        status.textContent = 'JSONL exportiert. Zum späteren Laden die Datei ins Projektverzeichnis kopieren.';
+        status.textContent = 'JSONL exportiert. Die Datei unter dem Modellnamen mit Endung .jsonl neben dem Modell speichern.';
     }
     button('Reset', reset, toolbar);
     button('View loggen', record, toolbar);

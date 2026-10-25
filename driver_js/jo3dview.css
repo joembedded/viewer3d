@@ -33,9 +33,13 @@
     border-radius: 6px; background: #252e36; color: #edf2f5;
     font: inherit; font-size: .8125rem; cursor: pointer;
 }
+.jo3dviewport-button {
+    align-self: center; min-height: 24px; padding: 2px 6px;
+    border-radius: 4px; font-size: .625rem; line-height: 1.2; color: #b6c6d1;
+}
 .jo3dviewport-button:hover, .jo3dpresentation-button:hover { background: #34424e; }
 .jo3dviewport-button:focus-visible, .jo3dpresentation-button:focus-visible { outline: 2px solid #b7ddf4; outline-offset: -3px; }
-.jo3dviewport-button[hidden], .jo3dviewer[data-flight-recorder="hidden"] .jo3dviewport-button { display: none; }
+.jo3dpresentation-button[hidden], .jo3dviewport-button[hidden], .jo3dviewer[data-flight-recorder="hidden"] .jo3dviewport-button { display: none; }
 .jo3dflight {
     box-sizing: border-box; position: fixed; inset: auto 16px 16px auto;
     margin: 0; width: min(420px, calc(100vw - 32px)); max-height: min(560px, 80dvh);
@@ -105,6 +109,21 @@
 }
 .jo3dviewer-compact .jo3dflight-info { top: 56px; max-height: min(65%, 380px, calc(100% - 68px)); }
 .jo3dflight-info-text { margin: 0; min-height: 0; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.jo3dflight-info-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0; }
+.jo3dflight-info-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.jo3dflight-info-toggle {
+    flex-shrink: 0; width: 40px; min-height: 44px; padding: 4px;
+    border: 1px solid #52616e; border-radius: 6px; background: #252e36; color: inherit;
+    font: 24px/1 system-ui, sans-serif; cursor: pointer;
+}
+.jo3dflight-info-toggle:hover { background: #34424e; }
+.jo3dflight-info-toggle:focus-visible { outline: 2px solid #b7ddf4; outline-offset: -3px; }
+.jo3dflight-info.is-collapsed { width: max-content; max-width: calc(100% - 24px); flex-direction: row; gap: 6px; padding: 8px; }
+.jo3dflight-info.is-collapsed .jo3dflight-info-heading { display: contents; }
+.jo3dflight-info.is-collapsed .jo3dflight-info-title { display: none; }
+.jo3dflight-info.is-collapsed .jo3dflight-info-toggle { order: 1; }
+.jo3dflight-info.is-collapsed .jo3dflight-navigation { flex-shrink: 1; }
+.jo3dflight-info.is-collapsed .jo3dflight-navigation button { min-width: 40px; padding: 6px; }
 .jo3dflight-navigation { flex-shrink: 0; }
 .jo3dflight-navigation button {
     min-width: 46px; min-height: 44px; padding: 6px 10px;

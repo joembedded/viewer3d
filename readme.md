@@ -34,7 +34,7 @@ compact viewers shrink to fit narrow screens.
 
 ```text
 *.html                    Demo entry points
-models/                   GLB models, including the original material sample
+models/                   GLB models and optional same-name JSONL presentations
   source/                 Editable Three.js project and its source artwork
 skyboxes/                 Panorama images and MP4 videos
 driver_js/               Viewer, Bluetooth drivers and shared styles
@@ -128,19 +128,35 @@ around X). The Skybox Explorer uses `[0, -1.5, 0]` for rotation around Y.
 Each zero component disables its axis. Older scalar values remain
 supported as an X-only speed.
 
-## Flight Recorder
+## Flight Recorder and presentations
 
-Every viewer has a **Flight Recorder** button that opens a small non-modal
-editor. Each viewer owns its own point list. Opening the editor switches off
+Every viewer has a compact **Record** developer button that opens the non-modal
+Flight Recorder editor. Each viewer owns its own point list. Opening the editor switches off
 auto-rotation; the canvas remains available for setting up the next shot.
 
-The adjacent **Presentation** button loads `flight-points-jpiot.jsonl` without a
-prompt, waits for the model and flies to the first point. It closes the editor
-on success; the Info box and navigation appear after arrival. The button stays
-available when the Flight Recorder launcher is hidden. Override the default file
-with `data-presentation-file="my-tour.jsonl"` on the viewer container or the
-`presentationFile` viewer option. A failed/empty file shows an error in the editor
-and retains the existing points. Reset, Auto or disposal cancel a pending load.
+Presentation files live **in the same directory as their model**, with the same
+base filename and the extension **`.jsonl`**. For example:
+
+| Model | Presentation data |
+| --- | --- |
+| `models/view3d_opt.glb` | `models/view3d_opt.jsonl` |
+| `models/rak3172sip.glb` | `models/rak3172sip.jsonl` |
+
+On initialization, each viewer checks its companion file with an HTTP `HEAD`
+request. The **Presentation** button is initially hidden and appears only if
+that request succeeds. A missing or unreachable file leaves it hidden; there is
+no fallback to another model's presentation. Serve the JSONL files alongside the
+models, including when publishing to GitHub Pages, then reload the page after
+adding a file. Viewers using the same model use the same companion file.
+
+**Presentation** loads the file without a prompt, waits for the model and flies
+to the first point. It closes the editor on success; the Info box and navigation
+appear after arrival. The button remains available when the **Record** launcher
+is hidden. Override the derived file with `data-presentation-file="my-tour.jsonl"`
+on the viewer container or the `presentationFile` viewer option (which takes
+precedence). Paths are relative to the HTML page. An invalid, empty or failed load
+shows an error in the editor and retains the existing points. Reset, Auto or
+disposal cancel a pending load.
 
 - **View loggen** asks for a short name, records the current view and adds a
   destination button. Each point has an editable **Info** field initially set
@@ -163,6 +179,14 @@ and retains the existing points. Reset, Auto or disposal cancel a pending load.
   then restart auto-rotation).
   Previous/next are disabled at the list boundaries. The box hides during a flight
   or manual interaction, and reappears after the next arrival.
+- On browser viewports **up to 1024 px wide or up to 600 px high**, the Info box
+  starts expanded at each arrival and collapses after **2 seconds** into a small
+  navigation bar. All four navigation controls remain accessible. The **▲/▼**
+  toggle is always available, including on larger screens, to collapse or expand
+  the text manually. Manually reopened text stays open until the next point or a
+  change across the responsive breakpoint. Larger viewports stay expanded by
+  default. Box resizing and the toggle use a soft **320 ms** animation, disabled
+  when the browser requests reduced motion.
 - **Auto** ends the current flight or stationary presentation view, flies back to
   the app's initial camera position, target, zoom and model pose, and only then
   restarts auto-rotation. This is the app's starting view, not the first point in
@@ -172,7 +196,11 @@ and retains the existing points. Reset, Auto or disposal cancel a pending load.
   Long point lists scroll vertically inside their frame; the toolbar stays visible.
 - **Reset** clears the list immediately and cancels an active flight or import.
 - **Export** downloads UTF-8 JSONL: one named point per line, including Info.
-  Copy the download into the project directory yourself.
+  Before a file has been loaded, the suggested download name is the model's
+  companion filename, e.g. `view3d_opt.jsonl`. After loading, it uses that file's
+  basename. Save/copy the download next to the corresponding model with the same
+  basename and `.jsonl` extension to make it available through **Presentation**.
+  Export does not write to the web server automatically.
 - **Laden** prompts for a project filename (including `.jsonl`, or a relative
   path), initially suggesting the same file as **Presentation**, then the last
   successfully loaded filename. It loads using `fetch()`, relative to the HTML page. A valid file
@@ -180,7 +208,7 @@ and retains the existing points. Reset, Auto or disposal cancel a pending load.
   An empty file loads an empty list. Lists are held in memory; export before
   reloading or leaving the page.
 
-The button is visible by default. Every demo marks its viewer container with
+The **Record** button is visible by default. Every demo marks its viewer container with
 `data-flight-recorder="visible"`; change it to `hidden` in the HTML to hide it:
 
 ```html
@@ -222,7 +250,7 @@ viewer.flightRecorder.flyTo(points[0]);       // returns duration in seconds
 viewer.flightRecorder.flyTo(0);               // first point by list index, with navigation
 viewer.flightRecorder.stop();                // cancel the current flight
 viewer.flightRecorder.startAutoRotation();   // fly to initial view, then resume rotation
-await viewer.flightRecorder.startPresentation(); // load default file and start first flight
+await viewer.flightRecorder.startPresentation(); // load model's JSONL companion and start first flight
 // await viewer.flightRecorder.startPresentation('my-tour.jsonl'); // optional filename
 viewer.flightRecorder.reset();               // clear the list
 ```
@@ -323,6 +351,7 @@ playwright-cli -s=viewer run-code --filename=tools/check-model-rotation.js
 playwright-cli -s=viewer run-code --filename=tools/check-flight-recorder.js
 playwright-cli -s=viewer run-code --filename=tools/check-flight-presentation.js
 playwright-cli -s=viewer run-code --filename=tools/check-presentation-start.js
+playwright-cli -s=viewer run-code --filename=tools/check-presentation-responsive.js
 ```
 
 The checks load every page at desktop and mobile widths, verify the 5% demo
@@ -335,6 +364,9 @@ The presentation check also exercises mouse wheel and optical zoom after import,
 the Edit prompt, multiline Info, navigation and ending a presentation.
 The presentation-start check loads the JPIoT tour and verifies the first point,
 short/long timing, file overrides, model readiness, cancellation and load errors.
+The responsive-presentation check verifies companion-file availability and button
+visibility on all demos, the two-second delay, manual expansion, navigation and
+cleanup at desktop, tablet, phone and short landscape viewport sizes.
 Screenshots go to the ignored `output/` folder.
 
 ## Dependencies and license

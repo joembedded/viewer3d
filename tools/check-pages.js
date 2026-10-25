@@ -5,11 +5,17 @@ async (page) => {
         'scientific-logger.html', 'material-preview.html', 'skybox-explorer.html'];
     const failures = [];
     const checks = [];
+    const optionalFiles = new Set();
+    page.on('request', request => {
+        if (request.method() === 'HEAD' && request.url().endsWith('.jsonl')) optionalFiles.add(request.url());
+    });
     page.on('pageerror', error => failures.push(error.message));
     page.on('response', response => {
+        if (response.status() === 404 && response.request().method() === 'HEAD' && optionalFiles.has(response.url())) return;
         if (response.status() >= 400) failures.push(response.status() + ' ' + response.url());
     });
     page.on('console', message => {
+        if (message.text().includes('404') && optionalFiles.has(message.location().url)) return;
         if (message.type() === 'error') failures.push(message.text());
     });
     // Hardware connection is deliberately not initiated by this smoke check.

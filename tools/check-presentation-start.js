@@ -11,13 +11,13 @@ async (page) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('http://localhost/viewer3d/jpiot-pcb.html');
     // On a fresh page, accepting Laden's default must fetch the same real file as Presentation.
-    await page.getByRole('button', { name: 'Flight Recorder', exact: true }).click();
+    await page.getByRole('button', { name: 'Record', exact: true }).click();
     await page.evaluate(() => { window.prompt = (message, value) => { window.__loadDefault = value; return value; }; });
-    const loadResponse = page.waitForResponse(response => response.url().endsWith('/flight-points-jpiot.jsonl'));
+    const loadResponse = page.waitForResponse(response => response.request().method() === 'GET' && response.url().endsWith('/models/view3d_opt.jsonl'));
     await page.getByRole('dialog').getByRole('button', { name: 'Laden', exact: true }).click();
     assert((await loadResponse).status() === 200, 'Laden fetch succeeds over XAMPP');
     await page.waitForFunction(() => window.__viewer.flightRecorder.points.length === 14);
-    assert(await page.evaluate(() => window.__loadDefault === 'flight-points-jpiot.jsonl'), 'Laden shares Presentation default');
+    assert(await page.evaluate(() => window.__loadDefault === './models/view3d_opt.jsonl'), 'Laden shares model companion default');
     await page.getByRole('button', { name: 'Presentation', exact: true }).click();
     await page.waitForFunction(() => window.__viewer?.flightRecorder.currentIndex === 0 &&
         !window.__viewer.flightRecorder.isFlying && Number(getComputedStyle(window.__viewer.flightRecorder.infoBox).opacity) > .99);
@@ -28,7 +28,7 @@ async (page) => {
     });
     assert(initial.count === 14 && initial.name === 'Overview' && !initial.open &&
         Math.abs(initial.distance - initial.expectedDistance) < 1e-8 && initial.text.includes('JPIoT'), 'default file starts first point');
-    const source = await page.evaluate(async () => (await fetch('flight-points-jpiot.jsonl')).text());
+    const source = await page.evaluate(async () => (await fetch('./models/view3d_opt.jsonl')).text());
     for (const [width, height] of [[1440, 900], [320, 568]]) {
         await page.setViewportSize({ width, height });
         assert(await page.locator('.jo3dflight-navigation').evaluate(nav => {
@@ -46,7 +46,7 @@ async (page) => {
         await page.screenshot({ path: `output/playwright/presentation-start-${width}.png` });
     }
     await page.locator('#mviewer').evaluate(v => v.dataset.flightRecorder = 'hidden');
-    assert(!await page.getByRole('button', { name: 'Flight Recorder', exact: true }).isVisible() &&
+    assert(!await page.getByRole('button', { name: 'Record', exact: true }).isVisible() &&
         await page.getByRole('button', { name: 'Presentation', exact: true }).isVisible(), 'presentation remains available with editor hidden');
     await page.locator('#mviewer').evaluate(v => v.dataset.flightRecorder = 'visible');
     await page.route('**/empty-presentation.jsonl', route => route.fulfill({ body: '' }));
@@ -100,7 +100,7 @@ async (page) => {
         return success && v.flightRecorder.points.length === 1 && v.flightRecorder.points[0].name === 'Modem';
     });
     assert(custom, 'HTML file override');
-    await page.getByRole('button', { name: 'Flight Recorder', exact: true }).click();
+    await page.getByRole('button', { name: 'Record', exact: true }).click();
     await page.evaluate(() => { window.prompt = (message, value) => { window.__loadDefault = value; return null; }; });
     await page.getByRole('dialog').getByRole('button', { name: 'Laden', exact: true }).click();
     assert(await page.evaluate(() => window.__loadDefault === 'custom-presentation.jsonl'), 'Laden remembers last successful file');
